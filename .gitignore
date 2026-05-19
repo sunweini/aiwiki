@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+node_modules/
+frontend/.next/
+data/workspaces/
+backend/data/workspaces/
+.env
+.env.local
+*.egg-info/
+dist/
+.obsidian/workspace.json
+.claude/
+.graphify-cache/
+tsconfig.tsbuildinfo

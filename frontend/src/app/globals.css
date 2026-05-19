@@ -1,0 +1,36 @@
+:root {
+  --paper: #f6f1e8;
+  --ink: #1f1a17;
+  --muted: #6f685f;
+  --line: #d7ccbb;
+  --accent: #274c5b;
+  --success: #567a63;
+  --warning: #9b6b2f;
+  --danger: #8a3b32;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: Georgia, "Source Han Serif SC", "Noto Serif CJK SC", serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

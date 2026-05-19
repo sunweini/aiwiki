@@ -1,0 +1,15 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    app_name: str = "ai-code-kb-platform"
+    environment: str = "dev"
+    database_url: str = "sqlite+pysqlite:///:memory:"
+    redis_url: str = "redis://localhost:6379/0"
+    artifact_root: str = "./data/artifacts"
+    workspace_root: str = "./data/workspaces"
+
+    model_config = SettingsConfigDict(env_prefix="AIKB_", extra="ignore")
+
+
+settings = Settings()
