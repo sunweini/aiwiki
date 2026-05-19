@@ -92,3 +92,17 @@ cd backend
 pytest tests/test_closure_flow.py -v
 ```
 
+
+## 测试
+
+```bash
+cd backend && python3 -m pytest tests/ -v  # 51 tests
+cd frontend && npx tsc --noEmit             # type check
+```
+
+## 文档
+
+- [开发环境搭建](docs/DEV_SETUP.md)
+- [API 参考](docs/API_REFERENCE.md)
+- [架构设计](docs/ARCHITECTURE.md)
+- [数据模型](docs/DATA_MODELS.md)
