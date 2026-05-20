@@ -25,3 +25,10 @@ class SourceRepository:
         ).scalars().all()
         total = self.session.query(Source).filter(Source.project_id == project_id).count()
         return items, total
+
+    def list_all_polling(self) -> list:
+        """List all sources with git polling enabled."""
+        from app.db.models.source import Source
+        return self.session.query(Source).filter(
+            Source.git_poll_interval_minutes > 0
+        ).all()
