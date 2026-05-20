@@ -5,7 +5,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "ai-code-kb-platform"
     environment: str = "dev"
-    database_url: str = "sqlite+pysqlite:///./data/aiwiki.db"
+    database_url: str = "postgresql+asyncpg://sunweini@localhost:5432/aiwiki"
+    db_pool_size: int = 10
+    db_max_overflow: int = 20
+    db_pool_recycle_seconds: int = 3600
     redis_url: str = "redis://localhost:6379/0"
     data_root: str = str(Path(__file__).resolve().parent.parent.parent / "data")
 
