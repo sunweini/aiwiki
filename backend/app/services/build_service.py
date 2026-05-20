@@ -1,13 +1,11 @@
 import asyncio
-import json
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-from sqlalchemy.orm import Session
-
 from app.config import settings
+from app.db.database import AsyncSessionLocal
 from app.db.models.artifact_version import ArtifactVersion
 from app.db.models.build_job import BuildJob
 from app.db.models.release import Release
@@ -22,40 +20,36 @@ logger = logging.getLogger(__name__)
 
 class BuildService:
     def __init__(self, session_factory=None, runner: GraphifyRunner | None = None):
-        self._session_factory = session_factory
+        self._session_factory = session_factory or AsyncSessionLocal
         self.runner = runner
         self.wm = WorkspaceManager(Path(settings.data_root))
 
-    def create_build_job(self, kb_id: str, payload: BuildJobCreate, project_id: str = "proj_default") -> tuple[BuildJob, list[dict], str]:
-        session = self._session_factory() if self._session_factory else None
-        if session is None:
-            raise ValueError("session_factory is required to create build jobs")
-        repo = BuildJobRepository(session)
-        kb_repo = KnowledgeBaseRepository(session)
+    async def create_build_job(self, kb_id: str, payload: BuildJobCreate, project_id: str = "proj_default") -> tuple[BuildJob, list[dict], str]:
+        async with self._session_factory() as session:
+            repo = BuildJobRepository(session)
+            kb_repo = KnowledgeBaseRepository(session)
 
-        kb = kb_repo.get(kb_id)
-        project_id = kb.project_id if kb else project_id
+            kb = await kb_repo.get(kb_id)
+            project_id = kb.project_id if kb else project_id
 
-        now = datetime.now(UTC)
-        build_job = BuildJob(
-            id=f"job_{uuid4().hex[:12]}",
-            knowledge_base_id=kb_id,
-            build_type=payload.build_type,
-            status="pending",
-            current_stage=None,
-            release_id=None,
-            error_summary=None,
-            created_at=now,
-            started_at=now,
-        )
-        build_job = repo.create(build_job)
-        sources = repo.list_sources(kb_id)
-        session.close()
-        return build_job, sources, project_id
+            now = datetime.now(UTC)
+            build_job = BuildJob(
+                id=f"job_{uuid4().hex[:12]}",
+                knowledge_base_id=kb_id,
+                build_type=payload.build_type,
+                status="pending",
+                current_stage=None,
+                release_id=None,
+                error_summary=None,
+                created_at=now,
+                started_at=now,
+            )
+            build_job = await repo.create(build_job)
+            sources = await repo.list_sources(kb_id)
+            return build_job, sources, project_id
 
     async def enqueue_build(self, job_id: str, kb_id: str, sources: list[dict],
                             llm_config: dict | None = None, project_id: str = "proj_default") -> None:
-        """Fire-and-forget async build. Updates job status via progress callback."""
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(
             None,
@@ -64,8 +58,16 @@ class BuildService:
         )
 
     def _sync_run_and_persist(self, job_id, kb_id, sources, llm_config, project_id):
+        """Runs in thread: sync graphify + bridge to async DB ops."""
         def on_progress(stage_name: str, status: str, **meta):
-            self._update_job_stage(job_id, stage_name, status, meta)
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                asyncio.run(self._update_job_stage(job_id, stage_name, status, **meta))
+            else:
+                asyncio.run_coroutine_threadsafe(
+                    self._update_job_stage(job_id, stage_name, status, **meta), loop
+                )
 
         if self.runner is None:
             return
@@ -80,16 +82,15 @@ class BuildService:
         )
 
         try:
-            self._persist_result(job_id, kb_id, result, project_id)
+            asyncio.run(self._persist_result(job_id, kb_id, result, project_id))
         except Exception:
             logger.exception("Failed to persist build result for job %s", job_id)
-            self._mark_job_failed(job_id, "Persistence error after runner completion")
+            asyncio.run(self._mark_job_failed(job_id, "Persistence error after runner completion"))
 
-    def _update_job_stage(self, job_id: str, stage_name: str, status: str, **meta):
-        session = self._session_factory()
-        try:
+    async def _update_job_stage(self, job_id: str, stage_name: str, status: str, **meta):
+        async with self._session_factory() as session:
             repo = BuildJobRepository(session)
-            job = repo.get(job_id)
+            job = await repo.get(job_id)
             if job is None:
                 return
             job.current_stage = stage_name
@@ -103,18 +104,12 @@ class BuildService:
                 job.stages.append(stage_entry)
             if status == "running" and job.status == "pending":
                 job.status = "running"
-            repo.update(job)
-            session.commit()
-        except Exception:
-            logger.exception("Failed to update job stage for %s", job_id)
-        finally:
-            session.close()
+            await repo.update(job)
 
-    def _persist_result(self, job_id: str, kb_id: str, result: dict, project_id: str):
-        session = self._session_factory()
-        try:
+    async def _persist_result(self, job_id: str, kb_id: str, result: dict, project_id: str):
+        async with self._session_factory() as session:
             repo = BuildJobRepository(session)
-            job = repo.get(job_id)
+            job = await repo.get(job_id)
             if job is None:
                 return
 
@@ -153,40 +148,27 @@ class BuildService:
 
                 if result.get("graph_ready"):
                     kb_repo = KnowledgeBaseRepository(session)
-                    kb = kb_repo.get(kb_id)
+                    kb = await kb_repo.get(kb_id)
                     if kb is not None:
                         kb.active_release_id = release.id
                         kb.updated_at = datetime.now(UTC)
 
-            session.commit()
-        except Exception:
-            session.rollback()
-            logger.exception("Failed to persist result for job %s", job_id)
-            raise
-        finally:
-            session.close()
+            await session.commit()
 
-    def _mark_job_failed(self, job_id: str, error: str):
-        session = self._session_factory()
-        try:
+    async def _mark_job_failed(self, job_id: str, error: str):
+        async with self._session_factory() as session:
             repo = BuildJobRepository(session)
-            job = repo.get(job_id)
+            job = await repo.get(job_id)
             if job:
                 job.status = "failed"
                 job.error_summary = error
                 job.finished_at = datetime.now(UTC)
-                repo.update(job)
-                session.commit()
-        except Exception:
-            session.rollback()
-        finally:
-            session.close()
+                await repo.update(job)
 
-    def _read_llm_config(self, kb_id: str) -> dict:
-        session = self._session_factory()
-        try:
+    async def _read_llm_config(self, kb_id: str) -> dict:
+        async with self._session_factory() as session:
             kb_repo = KnowledgeBaseRepository(session)
-            kb = kb_repo.get(kb_id)
+            kb = await kb_repo.get(kb_id)
             if kb is None:
                 return {}
             return {
@@ -196,8 +178,6 @@ class BuildService:
                 "llm_extraction_budget": kb.llm_extraction_budget,
                 "llm_base_url_override": kb.llm_base_url_override,
             }
-        finally:
-            session.close()
 
     def can_activate_release(self, release: dict) -> bool:
         return release.get("artifact_status", {}).get("graph") in ("ready", "degraded")
