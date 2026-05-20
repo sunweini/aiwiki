@@ -55,7 +55,6 @@ class GraphifyRunner:
 
     def __init__(self, workspace_manager: WorkspaceManager) -> None:
         self.workspace_manager = workspace_manager
-        self.materializer = SourceMaterializer(workspace_manager.root)
         self.enhancer = ObsidianEnhancer()
         self._graphify_available: bool | None = None
 
@@ -118,8 +117,15 @@ class GraphifyRunner:
         # --- materialize_sources ---
         if progress_callback:
             progress_callback("materialize_sources", "running")
+        materialized: list[Path] = []
         try:
-            materialized = self.materializer.materialize(job_id, sources)
+            mat = SourceMaterializer(project_id, self.workspace_manager.project_root(project_id))
+            for source in sources:
+                mat.materialize(source)
+            for source in sources:
+                source_dir = self.workspace_manager.source_dir(project_id, source.get("id", ""))
+                if source_dir.exists():
+                    materialized.append(source_dir)
             stages_result.append(_stage("materialize_sources", "completed", materialized_count=len(materialized)))
             if progress_callback:
                 progress_callback("materialize_sources", "completed", materialized_count=len(materialized))
@@ -133,7 +139,7 @@ class GraphifyRunner:
         # --- normalize_inputs ---
         if progress_callback:
             progress_callback("normalize_inputs", "running")
-        input_root = ws / "graphify-input"
+        input_root = ws / "input"
         input_files: list[Path] = []
         skipped_noise: int = 0
         skipped_sensitive: int = 0
