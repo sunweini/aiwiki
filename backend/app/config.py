@@ -1,3 +1,4 @@
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -6,8 +7,7 @@ class Settings(BaseSettings):
     environment: str = "dev"
     database_url: str = "sqlite+pysqlite:///:memory:"
     redis_url: str = "redis://localhost:6379/0"
-    artifact_root: str = "./data/artifacts"
-    workspace_root: str = "./data/workspaces"
+    data_root: str = str(Path(__file__).resolve().parent.parent.parent / "data")
 
     model_config = SettingsConfigDict(env_prefix="AIKB_", extra="ignore")
 
