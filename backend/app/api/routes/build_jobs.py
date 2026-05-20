@@ -26,7 +26,7 @@ def get_session() -> Session:
 def _make_runner() -> GraphifyRunner:
     workspace_root = Path(settings.workspace_root)
     workspace_root.mkdir(parents=True, exist_ok=True)
-    return GraphifyRunner(WorkspaceManager(workspace_root))
+    return GraphifyRunner(WorkspaceManager(data_root=workspace_root))
 
 
 @router.post("/knowledge-bases/{kb_id}/builds", response_model=BuildJobRead, status_code=status.HTTP_201_CREATED)
@@ -62,6 +62,7 @@ def create_build_job(
         started_at=updated_job.started_at.isoformat(),
         finished_at=updated_job.finished_at.isoformat() if updated_job.finished_at else None,
         error_summary=updated_job.error_summary,
+        stages=updated_job.stages,
     )
 
 
@@ -117,4 +118,5 @@ def get_build_job(
         started_at=job.started_at.isoformat(),
         finished_at=job.finished_at.isoformat() if job.finished_at else None,
         error_summary=job.error_summary,
+        stages=job.stages,
     )

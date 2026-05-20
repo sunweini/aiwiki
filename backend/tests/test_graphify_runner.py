@@ -5,20 +5,18 @@ from app.runner.workspace import WorkspaceManager
 
 
 def test_workspace_manager_creates_expected_layout(tmp_path: Path) -> None:
-    manager = WorkspaceManager(root=tmp_path)
+    manager = WorkspaceManager(data_root=tmp_path)
 
-    workspace = manager.create("job_2026_05_19_0021")
+    workspace = manager.create_build_workspace("p", "kb_test", "job_2026_05_19_0021")
 
-    assert (workspace / "source-materials").exists()
-    assert (workspace / "graphify-input").exists()
-    assert (workspace / "graphify-out").exists()
-    assert (workspace / "obsidian-enhanced").exists()
+    assert (workspace / "input").exists()
+    assert (workspace / "out").exists()
     assert (workspace / "logs").exists()
     assert (workspace / "metadata").exists()
 
 
 def test_graphify_runner_returns_stage_log(tmp_path: Path) -> None:
-    manager = WorkspaceManager(root=tmp_path)
+    manager = WorkspaceManager(data_root=tmp_path)
     runner = GraphifyRunner(workspace_manager=manager)
 
     result = runner.run(
@@ -46,7 +44,7 @@ def test_graphify_runner_returns_stage_log(tmp_path: Path) -> None:
 
 
 def test_source_materializer_creates_source_dirs(tmp_path: Path) -> None:
-    manager = WorkspaceManager(root=tmp_path)
+    manager = WorkspaceManager(data_root=tmp_path)
     runner = GraphifyRunner(workspace_manager=manager)
 
     runner.run(
@@ -69,7 +67,7 @@ def test_normalize_inputs_preserves_directory_structure(tmp_path: Path) -> None:
     (src_dir / "README.md").write_text("# Test\n", encoding="utf-8")
     (src_dir / "sub").joinpath("a.py").write_text("x=1\n", encoding="utf-8")
 
-    manager = WorkspaceManager(root=tmp_path / "ws")
+    manager = WorkspaceManager(data_root=tmp_path / "ws")
     runner = GraphifyRunner(workspace_manager=manager)
 
     runner.run(
@@ -94,7 +92,7 @@ def test_normalize_inputs_handles_multiple_sources(tmp_path: Path) -> None:
     (src_b / "shared.py").write_text("# from B\n", encoding="utf-8")
     (src_b / "only_b.py").write_text("# B only\n", encoding="utf-8")
 
-    manager = WorkspaceManager(root=tmp_path / "ws")
+    manager = WorkspaceManager(data_root=tmp_path / "ws")
     runner = GraphifyRunner(workspace_manager=manager)
 
     runner.run(
@@ -116,7 +114,7 @@ def test_normalize_inputs_handles_multiple_sources(tmp_path: Path) -> None:
 def test_collect_artifacts_returns_eight_types(tmp_path: Path) -> None:
     out_dir = tmp_path / "graphify-out"
     out_dir.mkdir()
-    runner = GraphifyRunner(workspace_manager=WorkspaceManager(root=tmp_path))
+    runner = GraphifyRunner(workspace_manager=WorkspaceManager(data_root=tmp_path))
 
     artifacts = runner._collect_artifacts("rel_test", "kb_test", out_dir, True, True, True, True)
 

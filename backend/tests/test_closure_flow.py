@@ -18,20 +18,18 @@ from app.runner.workspace import WorkspaceManager
 
 
 def test_workspace_manager_creates_expected_layout(tmp_path: Path) -> None:
-    manager = WorkspaceManager(root=tmp_path)
+    manager = WorkspaceManager(data_root=tmp_path)
 
-    workspace = manager.create("job_2026_05_19_0021")
+    workspace = manager.create_build_workspace("p", "kb_test", "job_2026_05_19_0021")
 
-    assert (workspace / "source-materials").exists()
-    assert (workspace / "graphify-input").exists()
-    assert (workspace / "graphify-out").exists()
-    assert (workspace / "obsidian-enhanced").exists()
+    assert (workspace / "input").exists()
+    assert (workspace / "out").exists()
     assert (workspace / "logs").exists()
     assert (workspace / "metadata").exists()
 
 
 def test_graphify_runner_returns_stage_log(tmp_path: Path) -> None:
-    manager = WorkspaceManager(root=tmp_path)
+    manager = WorkspaceManager(data_root=tmp_path)
     runner = GraphifyRunner(workspace_manager=manager)
 
     result = runner.run(
@@ -60,7 +58,7 @@ def test_graphify_runner_returns_stage_log(tmp_path: Path) -> None:
 
 
 def test_source_materializer_creates_source_dirs(tmp_path: Path) -> None:
-    manager = WorkspaceManager(root=tmp_path)
+    manager = WorkspaceManager(data_root=tmp_path)
     runner = GraphifyRunner(workspace_manager=manager)
 
     runner.run(
