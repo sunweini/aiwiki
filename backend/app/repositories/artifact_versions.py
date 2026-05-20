@@ -1,21 +1,13 @@
-from sqlalchemy.orm import Session
-
 from app.db.models.artifact_version import ArtifactVersion
+from app.db.repository import BaseRepository
 
 
-class ArtifactVersionRepository:
-    def __init__(self, session: Session) -> None:
-        self.session = session
+class ArtifactVersionRepository(BaseRepository[ArtifactVersion]):
+    model = ArtifactVersion
 
-    def create(self, artifact: ArtifactVersion) -> ArtifactVersion:
-        self.session.add(artifact)
-        self.session.commit()
-        self.session.refresh(artifact)
-        return artifact
-
-    def batch_create(self, artifacts: list[ArtifactVersion]) -> list[ArtifactVersion]:
+    async def batch_create(self, artifacts: list[ArtifactVersion]) -> list[ArtifactVersion]:
         self.session.add_all(artifacts)
-        self.session.commit()
+        await self.session.commit()
         for a in artifacts:
-            self.session.refresh(a)
+            await self.session.refresh(a)
         return artifacts

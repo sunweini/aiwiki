@@ -1,14 +1,6 @@
-from sqlalchemy.orm import Session
-
 from app.db.models.binding import KnowledgeBaseSourceBinding
+from app.db.repository import BaseRepository
 
 
-class BindingRepository:
-    def __init__(self, session: Session) -> None:
-        self.session = session
-
-    def create(self, binding: KnowledgeBaseSourceBinding) -> KnowledgeBaseSourceBinding:
-        self.session.add(binding)
-        self.session.commit()
-        self.session.refresh(binding)
-        return binding
+class BindingRepository(BaseRepository[KnowledgeBaseSourceBinding]):
+    model = KnowledgeBaseSourceBinding

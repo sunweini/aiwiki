@@ -1,40 +1,29 @@
 from collections.abc import Sequence
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import func, select
 
 from app.db.models.source import Source
+from app.db.repository import BaseRepository
 
 
-class SourceRepository:
-    def __init__(self, session: Session) -> None:
-        self.session = session
+class SourceRepository(BaseRepository[Source]):
+    model = Source
 
-    def create(self, source: Source) -> Source:
-        self.session.add(source)
-        self.session.commit()
-        self.session.refresh(source)
-        return source
-
-    def list_by_project(self, project_id: str, page: int, page_size: int) -> tuple[Sequence[Source], int]:
-        items = self.session.execute(
+    async def list_by_project(self, project_id: str, page: int, page_size: int) -> tuple[Sequence[Source], int]:
+        stmt = (
             select(Source)
             .where(Source.project_id == project_id)
             .offset((page - 1) * page_size)
             .limit(page_size)
-        ).scalars().all()
-        total = self.session.query(Source).filter(Source.project_id == project_id).count()
+        )
+        result = await self.session.execute(stmt)
+        items = result.scalars().all()
+
+        count_stmt = select(func.count()).select_from(Source).where(Source.project_id == project_id)
+        total = (await self.session.execute(count_stmt)).scalar_one()
         return items, total
 
-    def update(self, source: Source) -> Source:
-        self.session.add(source)
-        self.session.commit()
-        self.session.refresh(source)
-        return source
-
-    def list_all_polling(self) -> list:
-        """List all sources with git polling enabled."""
-        from app.db.models.source import Source
-        return self.session.query(Source).filter(
-            Source.git_poll_interval_minutes > 0
-        ).all()
+    async def list_all_polling(self) -> list[Source]:
+        stmt = select(Source).where(Source.git_poll_interval_minutes > 0)
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())

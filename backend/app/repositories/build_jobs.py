@@ -1,49 +1,37 @@
-from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy import func, select, text
 
 from app.db.models.build_job import BuildJob
+from app.db.repository import BaseRepository
 
 
-class BuildJobRepository:
-    def __init__(self, session: Session) -> None:
-        self.session = session
+class BuildJobRepository(BaseRepository[BuildJob]):
+    model = BuildJob
 
-    def create(self, build_job: BuildJob) -> BuildJob:
-        self.session.add(build_job)
-        self.session.commit()
-        self.session.refresh(build_job)
-        return build_job
-
-    def list_by_kb(self, kb_id: str) -> list[BuildJob]:
-        return (
-            self.session.query(BuildJob)
-            .filter(BuildJob.knowledge_base_id == kb_id)
+    async def list_by_kb(self, kb_id: str) -> list[BuildJob]:
+        stmt = (
+            select(BuildJob)
+            .where(BuildJob.knowledge_base_id == kb_id)
             .order_by(BuildJob.created_at.desc(), BuildJob.id.desc())
-            .all()
         )
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
 
-    def list_by_kb_paginated(self, kb_id: str, page: int, page_size: int) -> tuple[list[BuildJob], int]:
-        query = self.session.query(BuildJob).filter(BuildJob.knowledge_base_id == kb_id)
-        total = query.count()
-        items = (
-            query.order_by(BuildJob.created_at.desc(), BuildJob.id.desc())
+    async def list_by_kb_paginated(self, kb_id: str, page: int, page_size: int) -> tuple[list[BuildJob], int]:
+        count_stmt = select(func.count()).select_from(BuildJob).where(BuildJob.knowledge_base_id == kb_id)
+        total = (await self.session.execute(count_stmt)).scalar_one()
+
+        stmt = (
+            select(BuildJob)
+            .where(BuildJob.knowledge_base_id == kb_id)
+            .order_by(BuildJob.created_at.desc(), BuildJob.id.desc())
             .offset((page - 1) * page_size)
             .limit(page_size)
-            .all()
         )
-        return items, total
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all()), total
 
-    def get(self, job_id: str) -> BuildJob | None:
-        return self.session.get(BuildJob, job_id)
-
-    def update(self, build_job: BuildJob) -> BuildJob:
-        self.session.add(build_job)
-        self.session.commit()
-        self.session.refresh(build_job)
-        return build_job
-
-    def list_sources(self, kb_id: str) -> list[dict[str, str]]:
-        rows = self.session.execute(
+    async def list_sources(self, kb_id: str) -> list[dict[str, str]]:
+        rows = await self.session.execute(
             text(
                 """
                 SELECT s.id, s.name, s.type, s.source_ref
@@ -56,11 +44,6 @@ class BuildJobRepository:
             {"kb_id": kb_id},
         )
         return [
-            {
-                "id": row.id,
-                "name": row.name,
-                "type": row.type,
-                "source_ref": row.source_ref,
-            }
+            {"id": row.id, "name": row.name, "type": row.type, "source_ref": row.source_ref}
             for row in rows
         ]
