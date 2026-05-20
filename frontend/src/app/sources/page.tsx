@@ -3,7 +3,7 @@ import Link from "next/link";
 import { listSources } from "@/lib/api";
 import type { Source } from "@/lib/types";
 
-const DEFAULT_PROJECT_ID = process.env.NEXT_PUBLIC_DEFAULT_PROJECT_ID ?? "proj_delivery_alpha";
+const DEFAULT_PROJECT_ID = process.env.NEXT_PUBLIC_DEFAULT_PROJECT_ID ?? "proj_myfirstpro";
 
 interface PageData {
   sources: Source[];
@@ -31,19 +31,19 @@ export default async function SourcesPage() {
     <main style={{ padding: "3rem 4rem", maxWidth: 1280, margin: "0 auto" }}>
       <header style={{ marginBottom: "2rem" }}>
         <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.78rem" }}>
-          Source Registry
+          数据源注册
         </p>
-        <h1 style={{ margin: "0.4rem 0 0", fontSize: "2.4rem" }}>Managed Sources</h1>
+        <h1 style={{ margin: "0.4rem 0 0", fontSize: "2.4rem" }}>已管理数据源</h1>
       </header>
 
       {error ? (
         <p style={{ color: "var(--danger)", marginBottom: "1rem" }}>
-          Backend unreachable: {error}. Showing empty catalog.
+          后端不可达：{error}。显示空白目录。
         </p>
       ) : null}
 
       {sources.length === 0 ? (
-        <p style={{ color: "var(--muted)" }}>No sources registered for this project.</p>
+        <p style={{ color: "var(--muted)" }}>此项目无已注册数据源。</p>
       ) : (
         <div style={{ display: "grid", gap: "1rem" }}>
           {sources.map((source) => (
@@ -58,9 +58,9 @@ export default async function SourcesPage() {
                 <div style={{ color: "var(--muted)", textTransform: "capitalize" }}>{source.status}</div>
               </div>
               <dl style={{ margin: "1rem 0 0", display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "0.9rem" }}>
-                <div><dt style={{ color: "var(--muted)" }}>Type</dt><dd style={{ margin: "0.2rem 0 0" }}>{source.type}</dd></div>
-                <div><dt style={{ color: "var(--muted)" }}>Sync</dt><dd style={{ margin: "0.2rem 0 0" }}>{source.sync_strategy}</dd></div>
-                <div><dt style={{ color: "var(--muted)" }}>Ref</dt><dd style={{ margin: "0.2rem 0 0", wordBreak: "break-all" }}>{source.source_ref}</dd></div>
+                <div><dt style={{ color: "var(--muted)" }}>类型</dt><dd style={{ margin: "0.2rem 0 0" }}>{source.type}</dd></div>
+                <div><dt style={{ color: "var(--muted)" }}>同步方式</dt><dd style={{ margin: "0.2rem 0 0" }}>{source.sync_strategy}</dd></div>
+                <div><dt style={{ color: "var(--muted)" }}>引用地址</dt><dd style={{ margin: "0.2rem 0 0", wordBreak: "break-all" }}>{source.source_ref}</dd></div>
               </dl>
             </article>
           ))}

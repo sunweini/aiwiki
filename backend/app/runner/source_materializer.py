@@ -37,18 +37,6 @@ class SourceMaterializer:
         source_dir = self.sources_root / source_id
         source_ref = source.get("source_ref", "")
 
-        # Stage 0: validate_boundary - refuse external paths
-        if source_ref:
-            resolved = Path(source_ref).resolve()
-            try:
-                resolved.relative_to(self.sources_root.resolve())
-            except ValueError:
-                source_dir.mkdir(parents=True, exist_ok=True)
-                (source_dir / ".materialize-error").write_text(
-                    f"source_ref '{source_ref}' is outside project sources/ boundary"
-                )
-                return source_dir
-
         # Determine strategy
         is_remote_git = source_ref.startswith(("http://", "https://", "git@"))
         git_branch = source.get("git_tracking_branch", "main")

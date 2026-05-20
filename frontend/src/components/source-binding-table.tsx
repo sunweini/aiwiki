@@ -11,11 +11,11 @@ export function SourceBindingTable({ bindings, sources }: SourceBindingTableProp
       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 680 }}>
         <thead>
           <tr style={{ textAlign: "left", borderBottom: "1px solid var(--line)" }}>
-            <th style={{ padding: "0.9rem" }}>Source</th>
-            <th style={{ padding: "0.9rem" }}>Status</th>
-            <th style={{ padding: "0.9rem" }}>Priority</th>
-            <th style={{ padding: "0.9rem" }}>Include</th>
-            <th style={{ padding: "0.9rem" }}>Exclude</th>
+            <th style={{ padding: "0.9rem" }}>数据源</th>
+            <th style={{ padding: "0.9rem" }}>状态</th>
+            <th style={{ padding: "0.9rem" }}>优先级</th>
+            <th style={{ padding: "0.9rem" }}>包含规则</th>
+            <th style={{ padding: "0.9rem" }}>排除规则</th>
           </tr>
         </thead>
         <tbody>

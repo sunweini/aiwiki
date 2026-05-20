@@ -3,7 +3,7 @@ import Link from "next/link";
 import { fetchKnowledgeBases, listAllBuildJobs } from "@/lib/api";
 import type { BuildJob, KnowledgeBaseSummary } from "@/lib/types";
 
-const DEFAULT_PROJECT_ID = process.env.NEXT_PUBLIC_DEFAULT_PROJECT_ID ?? "proj_delivery_alpha";
+const DEFAULT_PROJECT_ID = process.env.NEXT_PUBLIC_DEFAULT_PROJECT_ID ?? "proj_myfirstpro";
 
 interface DashboardData {
   knowledgeBases: KnowledgeBaseSummary[];
@@ -26,7 +26,7 @@ async function loadDashboard(): Promise<DashboardData> {
     return {
       knowledgeBases: [],
       recentBuilds: [],
-      error: err instanceof Error ? err.message : "Unable to reach API",
+      error: err instanceof Error ? err.message : "无法连接 API",
     };
   }
 }
@@ -38,25 +38,25 @@ export default async function DashboardPage() {
 
   const activeBuildCount = recentBuilds.filter((b) => b.status === "running" || b.status === "pending").length;
   const stats: Array<[string, string]> = [
-    ["Project", DEFAULT_PROJECT_ID],
-    ["Knowledge Bases", String(knowledgeBases.length)],
-    ["Recent Builds", String(recentBuilds.length)],
-    ["Active Builds", String(activeBuildCount)],
+    ["项目", DEFAULT_PROJECT_ID],
+    ["知识库", String(knowledgeBases.length)],
+    ["最近构建", String(recentBuilds.length)],
+    ["活跃构建", String(activeBuildCount)],
   ];
 
   return (
     <main style={{ padding: "3rem 4rem", maxWidth: 1280, margin: "0 auto" }}>
       <header style={{ borderBottom: "2px solid var(--line)", paddingBottom: "1.5rem", marginBottom: "2rem" }}>
         <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.78rem" }}>
-          Library / Archive Modernist Console
+          文库 / 档案 控制台
         </p>
-        <h1 style={{ margin: "0.5rem 0 0", fontSize: "3rem", lineHeight: 1.05 }}>Knowledge Archive</h1>
+        <h1 style={{ margin: "0.5rem 0 0", fontSize: "3rem", lineHeight: 1.05 }}>知识档案</h1>
         <p style={{ margin: "0.9rem 0 0", maxWidth: "52rem", color: "var(--muted)" }}>
-          A reading room for managed sources, active knowledge bases, release artifacts, and recent graph builds.
+          浏览已管理的数据源、活跃知识库、发布产物与最近的图谱构建记录。
         </p>
         {error ? (
           <p style={{ margin: "0.9rem 0 0", color: "var(--danger)", fontSize: "0.9rem" }}>
-            Backend unreachable: {error}. Showing empty catalog.
+            后端不可达：{error}。显示空白目录。
           </p>
         ) : null}
       </header>
@@ -68,7 +68,7 @@ export default async function DashboardPage() {
             style={{ border: "1px solid var(--line)", padding: "1.25rem", background: "rgba(255,255,255,0.28)" }}
           >
             <div style={{ color: "var(--muted)", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
-            <div style={{ fontSize: label === "Project" ? "1.1rem" : "2rem", marginTop: "0.35rem", fontFamily: label === "Project" ? "ui-monospace, SFMono-Regular, Menlo, monospace" : undefined }}>
+            <div style={{ fontSize: label === "项目" ? "1.1rem" : "2rem", marginTop: "0.35rem", fontFamily: label === "项目" ? "ui-monospace, SFMono-Regular, Menlo, monospace" : undefined }}>
               {value}
             </div>
           </article>
@@ -77,9 +77,9 @@ export default async function DashboardPage() {
 
       <section style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: "1.5rem" }}>
         <article style={{ border: "1px solid var(--line)", padding: "1.25rem", background: "rgba(255,255,255,0.28)" }}>
-          <h2 style={{ marginTop: 0 }}>Catalog of Knowledge Bases</h2>
+          <h2 style={{ marginTop: 0 }}>知识库目录</h2>
           {knowledgeBases.length === 0 ? (
-            <p style={{ color: "var(--muted)", margin: 0 }}>No knowledge bases yet for this project.</p>
+            <p style={{ color: "var(--muted)", margin: 0 }}>此项目暂无知识库。</p>
           ) : (
             <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
               {knowledgeBases.map((kb) => (
@@ -92,6 +92,9 @@ export default async function DashboardPage() {
                     {" · "}
                     <code style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "0.85rem" }}>{kb.kb_id}</code>
                   </div>
+                  <Link href={`/artifacts/${kb.kb_id}`} style={{ color: "var(--accent)", fontSize: "0.82rem", display: "inline-block", marginTop: "0.25rem" }}>
+                    查看图谱 →
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -99,9 +102,9 @@ export default async function DashboardPage() {
         </article>
 
         <article style={{ border: "1px solid var(--line)", padding: "1.25rem", background: "rgba(255,255,255,0.28)" }}>
-          <h2 style={{ marginTop: 0 }}>Recent Builds</h2>
+          <h2 style={{ marginTop: 0 }}>最近构建</h2>
           {recentBuilds.length === 0 ? (
-            <p style={{ color: "var(--muted)", margin: 0 }}>No build jobs recorded.</p>
+            <p style={{ color: "var(--muted)", margin: 0 }}>暂无构建记录。</p>
           ) : (
             <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
               {recentBuilds.map((build) => (

@@ -2,8 +2,8 @@ import "./globals.css";
 import { ReactNode } from "react";
 
 export const metadata = {
-  title: "AI Code Knowledge Archive",
-  description: "Multi-KB knowledge platform powered by graphify",
+  title: "AI 代码知识档案库",
+  description: "基于 graphify 的多知识库图谱平台",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

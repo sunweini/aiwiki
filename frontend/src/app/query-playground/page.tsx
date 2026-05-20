@@ -41,11 +41,11 @@ export default function QueryPlaygroundPage() {
     <main style={{ maxWidth: 1280, margin: "0 auto", padding: "2.5rem 3rem" }}>
       <header style={{ borderBottom: "1px solid var(--line)", paddingBottom: "1.25rem", marginBottom: "2rem" }}>
         <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.78rem" }}>
-          MCP Query Console
+          MCP 查询控制台
         </p>
-        <h1 style={{ margin: "0.45rem 0 0", fontSize: "2.2rem" }}>Query Playground</h1>
+        <h1 style={{ margin: "0.45rem 0 0", fontSize: "2.2rem" }}>查询演练场</h1>
         <p style={{ margin: "0.6rem 0 0", color: "var(--muted)", maxWidth: "42rem" }}>
-          Structured query testing for active knowledge graphs. This is a research instrument, not a chat interface.
+          面向活跃知识图谱的结构化查询测试工具，非对话界面。
         </p>
       </header>
 
@@ -56,7 +56,7 @@ export default function QueryPlaygroundPage() {
         >
           <div>
             <label htmlFor="kb_id" style={{ display: "block", marginBottom: "0.35rem", color: "var(--muted)", fontSize: "0.82rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Knowledge Base ID
+              知识库 ID
             </label>
             <input
               id="kb_id"
@@ -68,7 +68,7 @@ export default function QueryPlaygroundPage() {
           </div>
           <div>
             <label htmlFor="question" style={{ display: "block", marginBottom: "0.35rem", color: "var(--muted)", fontSize: "0.82rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Question
+              问题
             </label>
             <textarea
               id="question"
@@ -76,7 +76,7 @@ export default function QueryPlaygroundPage() {
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               rows={6}
-              placeholder="Describe the checkout domain architecture."
+              placeholder="描述 checkout 领域架构。"
               style={{ width: "100%", padding: "0.7rem", border: "1px solid var(--line)", background: "rgba(255,255,255,0.8)", resize: "vertical", fontFamily: "inherit" }}
             />
           </div>
@@ -85,15 +85,15 @@ export default function QueryPlaygroundPage() {
             disabled={loading}
             style={{ padding: "0.8rem 1rem", border: "1px solid var(--accent)", background: "var(--accent)", color: "white", cursor: "pointer", fontFamily: "inherit", fontSize: "0.9rem", letterSpacing: "0.03em" }}
           >
-            {loading ? "Running…" : "Run Query"}
+            {loading ? "运行中…" : "执行查询"}
           </button>
           {kbStatus ? (
             <div style={{ borderTop: "1px solid var(--line)", paddingTop: "0.75rem", fontSize: "0.82rem", color: "var(--muted)" }}>
-              <div>Status: {kbStatus.status}</div>
+              <div>状态：{kbStatus.status}</div>
               <div style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
-                Active release: {kbStatus.active_release_id ?? "none"}
+                活跃发布：{kbStatus.active_release_id ?? "无"}
               </div>
-              <div>Graph: {kbStatus.graph_status}</div>
+              <div>图谱：{kbStatus.graph_status}</div>
             </div>
           ) : null}
         </form>
@@ -107,21 +107,21 @@ export default function QueryPlaygroundPage() {
             <article style={{ border: "1px solid var(--line)", background: "rgba(255,255,255,0.28)" }}>
               <div style={{ borderBottom: "1px solid var(--line)", padding: "0.75rem 1.25rem", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", fontSize: "0.82rem", color: "var(--muted)" }}>
                 <div>
-                  KB{" "}
+                  知识库{" "}
                   <code style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", color: "var(--ink)" }}>{result.kb_id}</code>
                 </div>
                 <div>
-                  Release{" "}
-                  <code style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", color: "var(--ink)" }}>{result.release_id ?? "none"}</code>
+                  发布{" "}
+                  <code style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", color: "var(--ink)" }}>{result.release_id ?? "无"}</code>
                 </div>
               </div>
               <div style={{ padding: "1.25rem" }}>
-                <h3 style={{ margin: "0 0 0.75rem", fontSize: "1rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)" }}>Answer</h3>
+                <h3 style={{ margin: "0 0 0.75rem", fontSize: "1rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)" }}>回答</h3>
                 <p style={{ margin: 0, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{result.answer}</p>
               </div>
               {result.source_locations?.length ? (
                 <div style={{ borderTop: "1px solid var(--line)", padding: "1rem 1.25rem" }}>
-                  <h3 style={{ margin: "0 0 0.5rem", fontSize: "1rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)" }}>Source Locations</h3>
+                  <h3 style={{ margin: "0 0 0.5rem", fontSize: "1rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--muted)" }}>源码位置</h3>
                   <ul style={{ margin: 0, paddingLeft: "1.15rem", display: "grid", gap: "0.3rem" }}>
                     {result.source_locations.map((loc, i) => (
                       <li key={i} style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "0.85rem" }}>
@@ -133,7 +133,7 @@ export default function QueryPlaygroundPage() {
               ) : null}
               <div style={{ borderTop: "1px solid var(--line)", padding: "0.75rem 1.25rem", background: "rgba(0,0,0,0.02)" }}>
                 <details>
-                  <summary style={{ cursor: "pointer", color: "var(--muted)", fontSize: "0.82rem" }}>Raw Response</summary>
+                  <summary style={{ cursor: "pointer", color: "var(--muted)", fontSize: "0.82rem" }}>原始响应</summary>
                   <pre style={{ marginTop: "0.5rem", fontSize: "0.8rem", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", whiteSpace: "pre-wrap", color: "var(--muted)" }}>
                     {JSON.stringify(result, null, 2)}
                   </pre>
@@ -141,7 +141,7 @@ export default function QueryPlaygroundPage() {
               </div>
             </article>
           ) : (
-            <p style={{ color: "var(--muted)" }}>Submit a query to see results here.</p>
+            <p style={{ color: "var(--muted)" }}>提交查询以查看结果。</p>
           )}
         </section>
       </div>

@@ -39,7 +39,7 @@
 ```bash
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
-pip install fastapi uvicorn sqlalchemy alembic pydantic-settings pytest
+pip install fastapi uvicorn sqlalchemy alembic pydantic-settings pytest fastmcp mcp
 alembic upgrade head
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -240,6 +240,103 @@ curl -X POST http://localhost:8000/mcp/kb_explain \
   }'
 ```
 
+#### 标准 MCP Transport（Claude Code 集成）
+
+后端已提供 stdio 模式的 MCP Server，支持 Claude Code 原生挂载。
+
+**1. 配置 Claude Code：**
+
+```bash
+# 编辑 ~/.claude.json，添加 MCP 服务器
+python3 -c "
+import json
+with open('$HOME/.claude.json') as f:
+    cfg = json.load(f)
+cfg.setdefault('mcpServers', {})
+cfg['mcpServers']['aiwiki'] = {
+    'type': 'stdio',
+    'command': 'python3',
+    'args': ['/path/to/aiwiki/backend/app/mcp/mcp_server.py'],
+    'env': {
+        'AIKB_DATABASE_URL': 'sqlite+pysqlite:////path/to/aiwiki/backend/data/aiwiki.db'
+    }
+}
+with open('$HOME/.claude.json', 'w') as f:
+    json.dump(cfg, f, indent=2, ensure_ascii=False)
+"
+```
+
+**2. 重启 Claude Code**，即可在对话中使用以下工具：
+
+| MCP Tool | 功能 |
+|----------|------|
+| `kb_list` | 列出所有知识库 |
+| `kb_status` | 查看 KB 状态和图谱可用性 |
+| `kb_query` | 用自然语言查询知识图谱 |
+| `kb_path` | 查找两个节点间的最短路径 |
+| `kb_explain` | 解释特定节点的上下文 |
+
+**3. 使用示例（在 Claude Code 对话中）：**
+
+```
+帮我查一下 kb_aac292691c03 知识库里有哪些核心模块？
+```
+
+Claude Code 会自动调用 `kb_query` 工具，返回图谱查询结果。
+
+#### SSE MCP Transport（远程 Claude Code 集成）
+
+SSE 模式允许远程机器通过网络接入 MCP 服务。
+
+**1. 服务器端启动 SSE 服务：**
+
+```bash
+cd backend
+# 本地网络（仅同网段可访问）
+python3 app/mcp/mcp_server.py --transport sse --host 0.0.0.0 --port 8765
+
+# 公网（通过 ngrok 暴露）
+ngrok http 8765
+```
+
+记录 ngrok 公网地址（如 `https://abc123.ngrok-free.app`）。
+
+**2. 远程机器配置 Claude Code：**
+
+```bash
+# SSE 直连（同局域网）
+python3 -c "
+import json
+with open('\$HOME/.claude.json') as f:
+    cfg = json.load(f)
+cfg.setdefault('mcpServers', {})
+cfg['mcpServers']['aiwiki'] = {
+    'type': 'sse',
+    'url': 'http://<服务器IP>:8765/sse'
+}
+with open('\$HOME/.claude.json', 'w') as f:
+    json.dump(cfg, f, indent=2, ensure_ascii=False)
+"
+
+# 公网（ngrok 地址）
+python3 -c "
+import json
+with open('\$HOME/.claude.json') as f:
+    cfg = json.load(f)
+cfg.setdefault('mcpServers', {})
+cfg['mcpServers']['aiwiki'] = {
+    'type': 'sse',
+    'url': 'https://abc123.ngrok-free.app/sse'
+}
+with open('\$HOME/.claude.json', 'w') as f:
+    json.dump(cfg, f, indent=2, ensure_ascii=False)
+"
+```
+
+**3. 重启远程 Claude Code**，即可使用相同的 5 个 MCP 工具（`kb_list`, `kb_status`, `kb_query`, `kb_path`, `kb_explain`）。
+
+> **注意**：SSE 服务器复用后端数据库连接。确保 `DATABASE_URL` 环境变量或 `app/config.py` 指向正确的数据库路径。远程机器不需要本地数据库文件。
+
 ---
 
 ## Pipeline 16 阶段详解
@@ -295,7 +392,7 @@ aiwiki/
 │   ├── app/
 │   │   ├── api/routes/        # REST API
 │   │   ├── db/models/         # SQLAlchemy 模型
-│   │   ├── mcp/               # MCP 端点
+│   │   ├── mcp/               # MCP 端点 + stdio Server
 │   │   ├── repositories/      # 数据访问层
 │   │   ├── runner/            # graphify pipeline
 │   │   │   ├── graphify_runner.py    # 16 阶段主流程

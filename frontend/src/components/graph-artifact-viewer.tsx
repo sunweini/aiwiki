@@ -23,7 +23,7 @@ export function GraphArtifactViewer({ src, artifactPath, releaseId, kbId }: Grap
       >
         <div>
           <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>
-            graph.html · live preview
+            graph.html · 实时预览
           </p>
           <p style={{ margin: "0.3rem 0 0", fontFamily: MONO, fontSize: "0.85rem", wordBreak: "break-all" }}>
             {artifactPath ?? src}
@@ -41,7 +41,7 @@ export function GraphArtifactViewer({ src, artifactPath, releaseId, kbId }: Grap
             </span>
           ) : null}
           <a href={src} target="_blank" rel="noreferrer" style={{ color: "var(--accent)" }}>
-            Open in new tab ↗
+            在新标签页打开 ↗
           </a>
         </div>
       </header>

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { fetchArtifacts, fetchKBStatus, fetchKnowledgeBase, fetchReleases } from "@/lib/api";
 import type { ArtifactVersion, KnowledgeBaseSummary, MCPKBStatus, Release } from "@/lib/types";
+import { AnchorScroll } from "@/components/anchor-scroll";
 
 interface DetailPageProps {
   params: { kbId: string };
@@ -55,16 +56,17 @@ export default async function KnowledgeBaseDetailPage({ params }: DetailPageProp
   const { kb, status, releases, artifacts, activeReleaseId, errors } = await loadDetail(kbId);
 
   const displayName = kb?.name ?? kbId;
-  const description = "Read-only dossier of releases, artifacts, and graph status from the closure backend.";
+  const description = "只读档案，展示发布版本、产物与图谱状态。";
 
   const sections = [
-    { id: "header", label: "Overview" },
-    { id: "releases", label: "Releases" },
-    { id: "artifacts", label: "Artifacts" },
+    { id: "header", label: "概览" },
+    { id: "releases", label: "发布" },
+    { id: "artifacts", label: "产物" },
   ];
 
   return (
     <main style={{ maxWidth: 1320, margin: "0 auto", padding: "2.5rem 3rem" }}>
+      <AnchorScroll />
       <div
         style={{
           display: "grid",
@@ -75,19 +77,19 @@ export default async function KnowledgeBaseDetailPage({ params }: DetailPageProp
       >
         <aside style={{ position: "sticky", top: "2rem", borderRight: "1px solid var(--line)", paddingRight: "1rem" }}>
           <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.72rem" }}>
-            Outline
+            导航
           </p>
           <ul style={{ listStyle: "none", margin: "0.75rem 0 0", padding: 0, display: "grid", gap: "0.5rem" }}>
             {sections.map((section) => (
               <li key={section.id}>
-                <a href={`#${section.id}`} style={{ color: "var(--ink)" }}>
+                <Link href={`#${section.id}`} style={{ color: "var(--ink)" }}>
                   {section.label}
-                </a>
+                </Link>
               </li>
             ))}
             <li style={{ marginTop: "1rem" }}>
               <Link href="/knowledge-bases" style={{ fontSize: "0.85rem" }}>
-                ← Back to catalog
+                ← 返回目录
               </Link>
             </li>
           </ul>
@@ -99,13 +101,16 @@ export default async function KnowledgeBaseDetailPage({ params }: DetailPageProp
             style={{ borderBottom: "1px solid var(--line)", paddingBottom: "1.25rem", marginBottom: "1.75rem" }}
           >
             <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.78rem" }}>
-              Knowledge Base Dossier
+              知识库档案
             </p>
             <h1 style={{ margin: "0.45rem 0 0", fontSize: "2.2rem", lineHeight: 1.1 }}>{displayName}</h1>
             <p style={{ margin: "0.6rem 0 0", color: "var(--muted)" }}>
               <code style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>{kbId}</code>
             </p>
             <p style={{ margin: "0.6rem 0 0", maxWidth: "44rem" }}>{description}</p>
+            <Link href={`/artifacts/${kbId}`} style={{ display: "inline-block", color: "var(--accent)", fontSize: "0.85rem", marginTop: "0.6rem" }}>
+              查看图谱 →
+            </Link>
             {errors.length > 0 ? (
               <ul style={{ marginTop: "0.9rem", color: "var(--danger)", fontSize: "0.85rem" }}>
                 {errors.map((e) => (
@@ -116,17 +121,17 @@ export default async function KnowledgeBaseDetailPage({ params }: DetailPageProp
           </header>
 
           <section id="releases" style={{ marginBottom: "2.5rem" }}>
-            <h2 style={{ margin: "0 0 0.75rem" }}>Releases</h2>
+            <h2 style={{ margin: "0 0 0.75rem" }}>发布历史</h2>
             {releases.length === 0 ? (
-              <p style={{ color: "var(--muted)" }}>No releases recorded.</p>
+              <p style={{ color: "var(--muted)" }}>暂无发布记录。</p>
             ) : (
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ textAlign: "left", borderBottom: "1px solid var(--line)" }}>
-                    <th style={{ padding: "0.65rem 0.5rem" }}>Release</th>
-                    <th style={{ padding: "0.65rem 0.5rem" }}>Version</th>
-                    <th style={{ padding: "0.65rem 0.5rem" }}>Status</th>
-                    <th style={{ padding: "0.65rem 0.5rem" }}>Created</th>
+                    <th style={{ padding: "0.65rem 0.5rem" }}>发布 ID</th>
+                    <th style={{ padding: "0.65rem 0.5rem" }}>版本</th>
+                    <th style={{ padding: "0.65rem 0.5rem" }}>状态</th>
+                    <th style={{ padding: "0.65rem 0.5rem" }}>创建时间</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -146,15 +151,15 @@ export default async function KnowledgeBaseDetailPage({ params }: DetailPageProp
           </section>
 
           <section id="artifacts">
-            <h2 style={{ margin: "0 0 0.75rem" }}>Active Release Artifacts</h2>
+            <h2 style={{ margin: "0 0 0.75rem" }}>活跃发布产物</h2>
             {activeReleaseId ? (
               <p style={{ margin: "0 0 0.75rem", color: "var(--muted)" }}>
-                Release{" "}
+                发布{" "}
                 <code style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>{activeReleaseId}</code>
               </p>
             ) : null}
             {artifacts.length === 0 ? (
-              <p style={{ color: "var(--muted)" }}>No artifacts published yet.</p>
+              <p style={{ color: "var(--muted)" }}>暂无已发布产物。</p>
             ) : (
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: "0.75rem" }}>
                 {artifacts.map((art) => (
@@ -194,13 +199,13 @@ export default async function KnowledgeBaseDetailPage({ params }: DetailPageProp
         >
           <div>
             <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>
-              Status
+              状态
             </p>
-            <p style={{ margin: "0.35rem 0 0", fontSize: "1.1rem" }}>{status?.status ?? kb?.status ?? "unknown"}</p>
+            <p style={{ margin: "0.35rem 0 0", fontSize: "1.1rem" }}>{status?.status ?? kb?.status ?? "未知"}</p>
           </div>
           <div>
             <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>
-              Active Release
+              活跃发布
             </p>
             <p
               style={{
@@ -215,13 +220,13 @@ export default async function KnowledgeBaseDetailPage({ params }: DetailPageProp
           </div>
           <div>
             <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>
-              Graph
+              图谱
             </p>
-            <p style={{ margin: "0.35rem 0 0", fontSize: "0.9rem" }}>{status?.graph_status ?? "missing"}</p>
+            <p style={{ margin: "0.35rem 0 0", fontSize: "0.9rem" }}>{status?.graph_status ?? "缺失"}</p>
           </div>
           <div>
             <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>
-              Project
+              项目
             </p>
             <p
               style={{
@@ -235,31 +240,31 @@ export default async function KnowledgeBaseDetailPage({ params }: DetailPageProp
           </div>
           <div>
             <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>
-              Updated
+              更新时间
             </p>
             <p style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>{kb?.updated_at ?? "—"}</p>
           </div>
           <div>
             <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>
-              LLM Backend
+              LLM 后端
             </p>
             <p style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>{kb?.llm_backend ?? "—"}</p>
           </div>
           <div>
             <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>
-              LLM Model
+              LLM 模型
             </p>
             <p style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>{kb?.llm_model_override ?? "—"}</p>
           </div>
           <div>
             <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>
-              Extraction Budget
+              提取预算
             </p>
             <p style={{ margin: "0.35rem 0 0", fontSize: "0.85rem" }}>{kb?.llm_extraction_budget != null ? kb.llm_extraction_budget.toLocaleString() : "—"}</p>
           </div>
           <div>
             <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>
-              Base URL Override
+              Base URL 覆写
             </p>
             <p style={{
               margin: "0.35rem 0 0",

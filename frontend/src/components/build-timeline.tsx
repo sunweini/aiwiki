@@ -33,9 +33,9 @@ export function BuildTimeline({ stages }: BuildTimelineProps) {
               <strong>{stage.name}</strong>
               <span style={{ color: "var(--muted)", textTransform: "capitalize" }}>{stage.status}</span>
             </div>
-            <p style={{ margin: "0.35rem 0 0", color: "var(--muted)" }}>{stage.log || "No log emitted yet."}</p>
+            <p style={{ margin: "0.35rem 0 0", color: "var(--muted)" }}>{stage.log || "暂无日志。"}</p>
             <p style={{ margin: "0.35rem 0 0", fontSize: "0.82rem", color: "var(--muted)" }}>
-              {stage.started_at ?? "not started"} {stage.finished_at ? `→ ${stage.finished_at}` : ""}
+              {stage.started_at ?? "未开始"} {stage.finished_at ? `→ ${stage.finished_at}` : ""}
             </p>
           </div>
         </li>

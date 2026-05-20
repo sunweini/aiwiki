@@ -34,9 +34,9 @@ export function QueryResultPanel({ result, question, submittedAt }: QueryResultP
       >
         <div>
           <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.74rem" }}>
-            Query Result
+            查询结果
           </p>
-          <h2 style={{ margin: "0.3rem 0 0", fontSize: "1.25rem" }}>Structured response</h2>
+          <h2 style={{ margin: "0.3rem 0 0", fontSize: "1.25rem" }}>结构化响应</h2>
         </div>
         <dl style={{ margin: 0, display: "grid", gap: "0.2rem", justifyItems: "end", color: "var(--muted)", fontSize: "0.82rem" }}>
           <div style={{ display: "flex", gap: "0.4rem" }}>
@@ -48,7 +48,7 @@ export function QueryResultPanel({ result, question, submittedAt }: QueryResultP
             <dd style={{ margin: 0, fontFamily: MONO, color: "var(--ink)" }}>{result.release_id ?? "—"}</dd>
           </div>
           <div style={{ display: "flex", gap: "0.4rem" }}>
-            <dt>resolved_at</dt>
+            <dt>查询时间</dt>
             <dd style={{ margin: 0, fontFamily: MONO, color: "var(--ink)" }}>{formatTimestamp(updatedAt)}</dd>
           </div>
         </dl>
@@ -56,20 +56,20 @@ export function QueryResultPanel({ result, question, submittedAt }: QueryResultP
 
       {question ? (
         <div style={{ marginTop: "1.1rem" }}>
-          <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>Question</p>
+          <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>问题</p>
           <p style={{ margin: "0.4rem 0 0", whiteSpace: "pre-wrap" }}>{question}</p>
         </div>
       ) : null}
 
       <div style={{ marginTop: "1.25rem" }}>
-        <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>Answer</p>
-        <p style={{ margin: "0.5rem 0 0", lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{result.answer || "(empty answer)"}</p>
+        <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>回答</p>
+        <p style={{ margin: "0.5rem 0 0", lineHeight: 1.75, whiteSpace: "pre-wrap" }}>{result.answer || "（回答为空）"}</p>
       </div>
 
       <div style={{ marginTop: "1.5rem", display: "grid", gap: "1.25rem", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)" }}>
         <div style={{ border: "1px solid var(--line)", padding: "0.9rem 1rem", background: "rgba(246, 241, 232, 0.6)" }}>
           <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>
-            Source Locations
+            源码位置
           </p>
           {sources.length > 0 ? (
             <ul style={{ margin: "0.6rem 0 0", paddingLeft: 0, listStyle: "none", display: "grid", gap: "0.3rem" }}>
@@ -80,12 +80,12 @@ export function QueryResultPanel({ result, question, submittedAt }: QueryResultP
               ))}
             </ul>
           ) : (
-            <p style={{ margin: "0.6rem 0 0", color: "var(--muted)" }}>No source locations cited.</p>
+            <p style={{ margin: "0.6rem 0 0", color: "var(--muted)" }}>未引用源码位置。</p>
           )}
         </div>
         <div style={{ border: "1px solid var(--line)", padding: "0.9rem 1rem", background: "rgba(246, 241, 232, 0.6)" }}>
           <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontSize: "0.72rem" }}>
-            Artifact References
+            产物引用
           </p>
           {refs.length > 0 ? (
             <dl style={{ margin: "0.6rem 0 0", display: "grid", gap: "0.45rem" }}>
@@ -97,7 +97,7 @@ export function QueryResultPanel({ result, question, submittedAt }: QueryResultP
               ))}
             </dl>
           ) : (
-            <p style={{ margin: "0.6rem 0 0", color: "var(--muted)" }}>No artifact references attached.</p>
+            <p style={{ margin: "0.6rem 0 0", color: "var(--muted)" }}>未关联产物引用。</p>
           )}
         </div>
       </div>

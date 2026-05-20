@@ -3,15 +3,15 @@ import { listAllBuildJobs } from "@/lib/api";
 import type { BuildJob } from "@/lib/types";
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
-  preparing_sources: "Preparing Sources",
-  running_graphify: "Running Graphify",
-  generating_obsidian: "Generating Obsidian",
-  registering_artifacts: "Registering Artifacts",
-  completed: "Completed",
-  partial_success: "Partial Success",
-  failed: "Failed",
-  cancelled: "Cancelled",
+  pending: "等待中",
+  preparing_sources: "准备数据源",
+  running_graphify: "运行 Graphify",
+  generating_obsidian: "生成 Obsidian",
+  registering_artifacts: "注册产物",
+  completed: "已完成",
+  partial_success: "部分成功",
+  failed: "失败",
+  cancelled: "已取消",
 };
 
 export const dynamic = "force-dynamic";
@@ -30,15 +30,15 @@ export default async function BuildJobsPage() {
     <main style={{ maxWidth: 1280, margin: "0 auto", padding: "2.5rem 3rem" }}>
       <header style={{ borderBottom: "1px solid var(--line)", paddingBottom: "1.25rem", marginBottom: "2rem" }}>
         <p style={{ margin: 0, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "0.78rem" }}>
-          Build Archive
+          构建归档
         </p>
-        <h1 style={{ margin: "0.45rem 0 0", fontSize: "2.2rem" }}>Build Jobs</h1>
+        <h1 style={{ margin: "0.45rem 0 0", fontSize: "2.2rem" }}>构建任务</h1>
       </header>
 
       {error ? (
         <p style={{ color: "var(--danger)" }}>{error}</p>
       ) : jobs.length === 0 ? (
-        <p style={{ color: "var(--muted)" }}>No build jobs registered yet.</p>
+        <p style={{ color: "var(--muted)" }}>暂无构建任务记录。</p>
       ) : (
         <div style={{ display: "grid", gap: "0.75rem" }}>
           {jobs.map((job) => (
