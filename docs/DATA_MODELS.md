@@ -64,15 +64,18 @@
 | `id` | String (`src_xxx`) | PK |
 | `project_id` | String | FK → projects.id |
 | `name` | String | NOT NULL |
-| `type` | String | `github_repo` / `gitlab_repo` / `doc_site` / `markdown_dir` / `confluence_space` |
+| `type` | String | `markdown_dir` / `doc_site` (含 `.git/` 时自动 git 跟踪) |
 | `status` | String | `active` / `inactive` / `error` / `syncing` |
-| `source_ref` | String | 路径或 URL |
+| `source_ref` | String | 路径或 git URL |
 | `description` | String | nullable |
 | `auth_config` | JSON | 认证配置 |
 | `sync_strategy` | String | `webhook` / `polling` / `manual` |
 | `include_rules` | JSON | 包含规则 (glob patterns) |
 | `exclude_rules` | JSON | 排除规则 |
 | `normalization_options` | JSON | 标准化选项 |
+| `git_tracking_branch` | String | 跟踪分支，默认 `main` |
+| `git_poll_interval_minutes` | Integer | 轮询间隔，0=不轮询 |
+| `git_last_commit` | String | 上次 commit SHA, nullable |
 | `last_synced_at` | DateTime | nullable |
 | `created_at` | DateTime | NOT NULL |
 | `updated_at` | DateTime | NOT NULL |
@@ -121,6 +124,8 @@
 | `release_id` | String | FK → releases.id, nullable |
 | `triggered_by` | String | `manual` / `webhook` / `schedule` |
 | `reason` | String | nullable |
+| `current_stage` | String | 当前 pipeline 阶段名, nullable |
+| `stages` | JSON | 阶段执行记录列表 |
 | `error_summary` | String | nullable；失败时记录 |
 | `started_at` | DateTime | NOT NULL |
 | `finished_at` | DateTime | nullable；完成时记录 |

@@ -26,7 +26,8 @@ cp .env.example .env  # 编辑配置
 alembic upgrade head
 
 # 4. 启动后端 (默认 :8000)
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+# --reload-dir app/ 排除 data/ 目录，避免 graphify 输出触发重载
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir app/
 
 # 5. 前端 (新终端)
 cd frontend
@@ -38,8 +39,8 @@ npm run dev  # http://localhost:3000
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `DATABASE_URL` | 数据库连接串 | `sqlite:///./test.db` |
-| `WORKSPACE_ROOT` | build 工作目录 | `./data/workspaces` |
+| `AIKB_DATABASE_URL` | 数据库连接串 | `sqlite+pysqlite:///:memory:` |
+| `AIKB_DATA_ROOT` | 数据根目录 (projects/, releases/) | `./data` |
 | `DEEPSEEK_API_KEY` | DeepSeek API 密钥 | — |
 | `OPENAI_API_KEY` | OpenAI API 密钥 | — |
 
@@ -63,7 +64,7 @@ LLM API key 通过 `env:VARNAME` 引用传递给 KB 配置，例如 `env:DEEPSEE
 
 ```bash
 cd backend
-python3 -m pytest tests/ -v    # 51 tests
+python3 -m pytest tests/ -v    # 54 tests
 ```
 
 前端类型检查：
@@ -87,8 +88,16 @@ aiwiki/
 │   │   ├── schemas/          # Pydantic 验证
 │   │   └── services/         # 业务逻辑
 │   ├── alembic/              # 数据库迁移
-│   ├── tests/                # 测试 (51)
-│   └── data/workspaces/      # build 工作目录 (gitignored)
+│   └── tests/                # 测试 (54)
+├── data/                     # 运行时数据 (gitignored)
+│   └── projects/{id}/        # 项目目录
+│       ├── sources/          # 源文件副本
+│       ├── kb/{kb_id}/       # KB 目录
+│       │   ├── builds/       # build 工作区
+│       │   ├── cache/        # AST 缓存
+│       │   ├── obsidian/     # Obsidian vault (git repo)
+│       │   ├── wiki/         # Wiki (git repo)
+│       │   └── releases/     # release manifest
 ├── frontend/
 │   └── src/
 │       ├── app/              # Next.js App Router 页面

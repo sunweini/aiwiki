@@ -20,14 +20,16 @@ Base URL: `http://localhost:8000`
 // request
 {
   "name": "checkout-service",
-  "type": "github_repo",
-  "source_ref": "acme/checkout-service",
-  "sync_strategy": "webhook"
+  "type": "markdown_dir",
+  "source_ref": "https://github.com/acme/checkout-service.git",
+  "git_tracking_branch": "main",
+  "git_poll_interval_minutes": 30
 }
 ```
 
-`type`: `github_repo` | `gitlab_repo` | `doc_site` | `markdown_dir` | `confluence_space`
-`sync_strategy`: `webhook` | `polling` | `manual`
+`type`: `markdown_dir` | `doc_site` (含 `.git/` 时自动开启 git 跟踪)
+`git_tracking_branch`: 默认 `main`
+`git_poll_interval_minutes`: 0 = 不轮询
 
 ```json
 // response (201)
@@ -35,12 +37,14 @@ Base URL: `http://localhost:8000`
   "id": "src_7967b607db94",
   "project_id": "proj_delivery_alpha",
   "name": "checkout-service",
-  "type": "github_repo",
+  "type": "markdown_dir",
   "status": "active",
-  "source_ref": "acme/checkout-service",
-  "sync_strategy": "webhook",
-  "created_at": "2026-05-19T16:21:23",
-  "updated_at": "2026-05-19T16:21:23"
+  "source_ref": "https://github.com/acme/checkout-service.git",
+  "git_tracking_branch": "main",
+  "git_poll_interval_minutes": 30,
+  "git_last_commit": null,
+  "created_at": "2026-05-20T16:21:23",
+  "updated_at": "2026-05-20T16:21:23"
 }
 ```
 
@@ -125,7 +129,7 @@ Base URL: `http://localhost:8000`
 
 #### `POST /api/knowledge-bases/{kb_id}/builds`
 
-触发知识图谱构建。**同步执行**（V1），构建完成后返回结果。
+触发知识图谱构建。**异步执行**，立即返回 202，前端轮询任务状态。
 
 ```json
 // request
@@ -139,18 +143,20 @@ Base URL: `http://localhost:8000`
 `build_type`: `full_rebuild` | `incremental_update`
 
 ```json
-// response (201)
+// response (202 Accepted)
 {
   "job_id": "job_0898194ed50d",
   "knowledge_base_id": "kb_f871e0fc2f2b",
   "build_type": "full_rebuild",
   "triggered_by": "manual",
-  "reason": "E2E report fix verification",
-  "status": "completed",
-  "release_id": "rel_dc338a7102f1",
-  "started_at": "2026-05-19T16:52:01",
-  "finished_at": "2026-05-19T16:52:01",
-  "error_summary": null
+  "reason": "initial build",
+  "status": "pending",
+  "release_id": null,
+  "current_stage": null,
+  "started_at": "2026-05-20T16:52:01",
+  "finished_at": null,
+  "error_summary": null,
+  "stages": null
 }
 ```
 
@@ -212,7 +218,7 @@ Base URL: `http://localhost:8000`
       "release_id": "rel_dc338a7102f1",
       "artifact_type": "graph",
       "artifact_status": "ready",
-      "artifact_path": "data/workspaces/job_0898194ed50d/graphify-out/graph.json"
+      "artifact_path": "data/projects/proj_xxx/kb/kb_f871e0fc2f2b/builds/job_0898194ed50d/out/graph.json"
     }
   ]
 }

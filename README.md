@@ -7,7 +7,7 @@
 ```
 ┌─────────────┐     ┌──────────────┐     ┌─────────────────────┐
 │  Source      │────→│  Knowledge   │────→│  Build Job          │
-│  (代码/文档)  │     │  Base (KB)   │     │  (graphify 16 阶段) │
+│  (代码/文档)  │     │  Base (KB)   │     │  (graphify 17 阶段) │
 └─────────────┘     └──────────────┘     └──────────┬──────────┘
                                                     │
         ┌───────────────────────────────────────────┘
@@ -41,7 +41,7 @@ cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install fastapi uvicorn sqlalchemy alembic pydantic-settings pytest fastmcp mcp
 alembic upgrade head
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --reload-dir app/ --host 0.0.0.0 --port 8000
 ```
 
 ### 2. 启动前端
@@ -61,7 +61,7 @@ npm run dev
 curl http://localhost:8000/api/projects
 
 # 运行测试
-cd backend && python3 -m pytest tests/ -v  # 51 tests
+cd backend && python3 -m pytest tests/ -v  # 54 tests
 cd frontend && npx tsc --noEmit             # type check
 ```
 
@@ -74,14 +74,15 @@ cd frontend && npx tsc --noEmit             # type check
 Project 是顶级组织单元，Source 是数据来源。
 
 ```bash
-# 创建 Source（以本地 markdown 目录为例）
+# 创建 Source（支持本地路径或 git URL，含 .git/ 自动跟踪）
 curl -X POST http://localhost:8000/api/projects/proj_demo/sources \
   -H 'Content-Type: application/json' \
   -d '{
     "name": "my-codebase",
     "type": "markdown_dir",
-    "source_ref": "/path/to/your/code",
-    "sync_strategy": "manual"
+    "source_ref": "https://github.com/user/repo.git",
+    "git_tracking_branch": "main",
+    "git_poll_interval_minutes": 30
   }'
 ```
 
@@ -89,11 +90,10 @@ curl -X POST http://localhost:8000/api/projects/proj_demo/sources \
 
 | type | `source_ref` 含义 | 适用场景 |
 |------|-------------------|----------|
-| `github_repo` | `owner/repo` 格式 | GitHub 仓库 |
-| `gitlab_repo` | `owner/repo` 格式 | GitLab 仓库 |
+| `markdown_dir` | 本地路径或 git URL | 代码仓库、文档目录 |
 | `doc_site` | 本地目录路径 | 文档站点 |
-| `markdown_dir` | 本地目录路径 | Markdown 文件目录 |
-| `confluence_space` | Confluence space key | Confluence 空间 |
+
+> 任何含 `.git/` 的目录自动启用 git 版本追踪，`source_ref` 为 git URL 时自动 clone。
 
 ### 第二步：创建 Knowledge Base 并配置 LLM
 
@@ -166,7 +166,7 @@ curl -X POST http://localhost:8000/api/knowledge-bases/<KB_ID>/builds \
 | `full_rebuild` | 全量重建（默认） |
 | `incremental_update` | 增量更新（V2） |
 
-响应包含 `job_id`、`status`、`release_id`。Build 同步执行（V1），完成后立即返回结果。
+响应包含 `job_id`、`status`、`current_stage`。Build 异步执行，立即返回 202，前端轮询 `/build-jobs/{job_id}` 跟踪进度。
 
 ### 第五步：查看 Release 和 Artifacts
 
@@ -339,14 +339,15 @@ with open('\$HOME/.claude.json', 'w') as f:
 
 ---
 
-## Pipeline 16 阶段详解
+## Pipeline 17 阶段详解
 
 触发 Build 后，graphify runner 按以下顺序执行：
 
 | # | 阶段 | 功能 | 阻塞 |
 |---|------|------|------|
+| 0 | `validate_boundary` | 验证边界隔离（架构级保证） | — |
 | 1 | `resolve_job_context` | 解析 job 上下文 | — |
-| 2 | `materialize_sources` | 复制源文件到工作目录 | ✅ |
+| 2 | `materialize_sources` | 复制源文件 / git clone 到 `sources/` | ✅ |
 | 3 | `normalize_inputs` | 符号链接保留目录结构到 `graphify-input/` | ✅ |
 | 4 | `extract` | LLM 提取 nodes + edges | ✅ |
 | — | `sanitize` | 清理 orphan edges（无目标节点的边） | — |
@@ -359,13 +360,13 @@ with open('\$HOME/.claude.json', 'w') as f:
 | 11 | `export_wiki` | 导出 Wiki 页面 | 否 |
 | 12 | `export_visual` | SVG / GraphML / Canvas / Cypher / Tree HTML | 否 |
 | 13 | `enhance_obsidian` | 注入 KB 元数据到 vault | 否 |
-| 14 | `verify_query` | BFS 查询验证图可读 | 否 |
-| 15 | `register_release` | 持久化 Release + 8 Artifacts | ✅ |
+| 14 | `verify_query` | 3 条中文查询验证 + min 节点/边检查 | **✅ hard gate** |
+| 15 | `register_release` | 持久化 Release + 8 Artifacts + rsync obsidian/wiki | ✅ |
 | 16 | `activate_or_roll_back` | 更新 KB.active_release_id | — |
 
-**阻塞失败**（❌）：stage 2-5, 15 失败则 pipeline 终止，不生成 release。
+**阻塞失败**（✅）：stage 2-5, 14, 15 失败则 pipeline 终止，不生成 release。
 
-**降级**（⚠️）：stage 6-14 失败则对应 artifact 标记为 `degraded`，pipeline 继续。
+**降级**（否）：stage 6-13 失败则对应 artifact 标记为 `degraded`，pipeline 继续。
 
 ---
 
@@ -395,14 +396,23 @@ aiwiki/
 │   │   ├── mcp/               # MCP 端点 + stdio Server
 │   │   ├── repositories/      # 数据访问层
 │   │   ├── runner/            # graphify pipeline
-│   │   │   ├── graphify_runner.py    # 16 阶段主流程
-│   │   │   ├── source_materializer.py  # 源文件复制
+│   │   │   ├── graphify_runner.py    # 17 阶段主流程
+│   │   │   ├── source_materializer.py  # 源文件复制 + git clone
 │   │   │   ├── obsidian_enhancer.py    # vault 元数据注入
-│   │   │   └── workspace.py          # 工作目录管理
+│   │   │   └── workspace.py          # 项目目录管理
 │   │   ├── schemas/           # Pydantic
 │   │   └── services/          # 业务逻辑
 │   ├── alembic/               # 数据库迁移
-│   └── tests/                 # 51 tests
+│   └── tests/                 # 54 tests
+├── data/                      # 运行时数据 (gitignored)
+│   └── projects/{id}/         # 项目根
+│       ├── sources/           # 源文件副本 (复制进入，隔离边界)
+│       └── kb/{kb_id}/
+│           ├── builds/        # build 工作区
+│           ├── cache/         # AST 缓存 (跨 build 复用)
+│           ├── obsidian/      # Obsidian vault (git repo)
+│           ├── wiki/          # Wiki (git repo)
+│           └── releases/      # release manifest
 ├── frontend/
 │   └── src/
 │       ├── app/               # Next.js App Router
@@ -415,7 +425,7 @@ aiwiki/
 
 ```bash
 cd backend
-python3 -m pytest tests/ -v    # 全部 51 个测试
+python3 -m pytest tests/ -v    # 全部 54 个测试
 pytest tests/test_closure_flow.py -v  # 最小闭环测试
 pytest tests/test_graphify_runner.py -v  # pipeline 测试
 ```
@@ -437,8 +447,8 @@ alembic downgrade -1
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `DATABASE_URL` | 数据库连接串 | `sqlite:///./test.db` |
-| `WORKSPACE_ROOT` | Build 工作目录 | `./data/workspaces` |
+| `AIKB_DATABASE_URL` | 数据库连接串 | `sqlite+pysqlite:///:memory:` |
+| `AIKB_DATA_ROOT` | 数据根目录 | `./data` |
 | `DEEPSEEK_API_KEY` | DeepSeek API 密钥 | — |
 | `OPENAI_API_KEY` | OpenAI API 密钥 | — |
 | `ANTHROPIC_API_KEY` | Anthropic API 密钥 | — |
