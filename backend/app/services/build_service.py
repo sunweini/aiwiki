@@ -85,7 +85,7 @@ class BuildService:
             logger.exception("Failed to persist build result for job %s", job_id)
             self._mark_job_failed(job_id, "Persistence error after runner completion")
 
-    def _update_job_stage(self, job_id: str, stage_name: str, status: str, meta: dict):
+    def _update_job_stage(self, job_id: str, stage_name: str, status: str, **meta):
         session = self._session_factory()
         try:
             repo = BuildJobRepository(session)

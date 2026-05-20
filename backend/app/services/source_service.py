@@ -3,7 +3,7 @@ from pathlib import Path
 from uuid import uuid4
 import subprocess
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.db.models import Source
@@ -14,12 +14,12 @@ from app.schemas.source import SourceCreate
 
 
 class SourceService:
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         self.session = session
         self.repository = SourceRepository(session)
         self.wm = WorkspaceManager(Path(settings.data_root))
 
-    def create_source(self, project_id: str, payload: SourceCreate) -> Source:
+    async def create_source(self, project_id: str, payload: SourceCreate) -> Source:
         now = datetime.now(UTC)
         source_id = f"src_{uuid4().hex[:12]}"
 
@@ -45,9 +45,8 @@ class SourceService:
         source.updated_at = now
         source.last_synced_at = None
 
-        source = self.repository.create(source)
+        source = await self.repository.create(source)
 
-        # Materialize source files into sources/{source_id}/
         mat = SourceMaterializer(project_id, self.wm.project_root(project_id))
         try:
             mat.materialize({
@@ -61,19 +60,33 @@ class SourceService:
                 try:
                     head = subprocess.run(
                         ["git", "-C", str(source_dir), "rev-parse", "HEAD"],
-                        capture_output=True, text=True, timeout=10
+                        capture_output=True, text=True, timeout=10,
                     ).stdout.strip()
                     source.git_last_commit = head
                 except subprocess.CalledProcessError:
                     pass
             source.last_synced_at = now
-            self.repository.update(source)
+            await self.repository.update(source)
         except Exception:
             source.status = "error"
-            self.repository.update(source)
+            await self.repository.update(source)
 
         return source
 
-    def list_sources(self, project_id: str, page: int = 1, page_size: int = 20) -> tuple[list[Source], int]:
-        items, total = self.repository.list_by_project(project_id=project_id, page=page, page_size=page_size)
+    async def list_sources(self, project_id: str, page: int = 1, page_size: int = 20) -> tuple[list[Source], int]:
+        items, total = await self.repository.list_by_project(project_id=project_id, page=page, page_size=page_size)
         return list(items), total
+
+    async def update_source(self, source_id: str, name: str) -> Source:
+        source = await self.repository.get(source_id)
+        if source is None:
+            raise ValueError("source not found")
+        source.name = name
+        source.updated_at = datetime.now(UTC)
+        return await self.repository.update(source)
+
+    async def delete_source(self, source_id: str) -> None:
+        source = await self.repository.get(source_id)
+        if source is None:
+            raise ValueError("source not found")
+        await self.repository.delete(source)

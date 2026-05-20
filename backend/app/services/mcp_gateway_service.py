@@ -2,7 +2,8 @@ import logging
 from pathlib import Path
 
 import networkx as nx
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.artifact_version import ArtifactVersion
 from app.repositories.knowledge_bases import KnowledgeBaseRepository
@@ -23,7 +24,7 @@ class GraphMissingError(Exception):
 
 
 class MCPGatewayService:
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         self.session = session
         self.knowledge_bases = KnowledgeBaseRepository(session)
         self.releases = ReleaseRepository(session)
@@ -32,8 +33,8 @@ class MCPGatewayService:
     # kb_status
     # ------------------------------------------------------------------
 
-    def kb_status(self, kb_id: str) -> dict:
-        kb = self.knowledge_bases.get(kb_id)
+    async def kb_status(self, kb_id: str) -> dict:
+        kb = await self.knowledge_bases.get(kb_id)
         if kb is None:
             return {
                 "kb_id": kb_id,
@@ -51,7 +52,7 @@ class MCPGatewayService:
                 "graph_status": "missing",
             }
 
-        release = self.releases.get(active_release_id)
+        release = await self.releases.get(active_release_id)
         artifact_status = release.artifact_status if release is not None else {}
 
         if not self._graphify_available():
@@ -76,8 +77,8 @@ class MCPGatewayService:
     # kb_list
     # ------------------------------------------------------------------
 
-    def kb_list(self, project_id: str | None = None) -> dict:
-        items = self.knowledge_bases.list(project_id=project_id)
+    async def kb_list(self, project_id: str | None = None) -> dict:
+        items = await self.knowledge_bases.list(project_id=project_id)
         return {
             "items": [
                 {
@@ -96,9 +97,9 @@ class MCPGatewayService:
     # kb_query
     # ------------------------------------------------------------------
 
-    def kb_query(self, kb_id: str, question: str, *, mode: str = "bfs", budget: int = 2000) -> dict:
+    async def kb_query(self, kb_id: str, question: str, *, mode: str = "bfs", budget: int = 2000) -> dict:
         try:
-            G = self._load_graph(kb_id)
+            G = await self._load_graph(kb_id)
         except KBNotReadyError:
             return self._error(kb_id, "knowledge_base_not_ready", "KB has no active release", retryable=False)
         except GraphMissingError as exc:
@@ -112,19 +113,19 @@ class MCPGatewayService:
 
         return {
             "kb_id": kb_id,
-            "release_id": self._active_release_id(kb_id),
+            "release_id": await self._active_release_id(kb_id),
             "answer": answer,
             "source_locations": [],
-            "artifact_refs": self._build_artifact_refs(kb_id),
+            "artifact_refs": await self._build_artifact_refs(kb_id),
         }
 
     # ------------------------------------------------------------------
     # kb_path
     # ------------------------------------------------------------------
 
-    def kb_path(self, kb_id: str, source_label: str, target_label: str) -> dict:
+    async def kb_path(self, kb_id: str, source_label: str, target_label: str) -> dict:
         try:
-            G = self._load_graph(kb_id)
+            G = await self._load_graph(kb_id)
         except KBNotReadyError:
             return self._error(kb_id, "knowledge_base_not_ready", "KB has no active release", retryable=False)
         except GraphMissingError as exc:
@@ -140,7 +141,7 @@ class MCPGatewayService:
 
         return {
             "kb_id": kb_id,
-            "release_id": self._active_release_id(kb_id),
+            "release_id": await self._active_release_id(kb_id),
             **result,
         }
 
@@ -148,9 +149,9 @@ class MCPGatewayService:
     # kb_explain
     # ------------------------------------------------------------------
 
-    def kb_explain(self, kb_id: str, node_label: str, budget: int = 2000) -> dict:
+    async def kb_explain(self, kb_id: str, node_label: str, budget: int = 2000) -> dict:
         try:
-            G = self._load_graph(kb_id)
+            G = await self._load_graph(kb_id)
         except KBNotReadyError:
             return self._error(kb_id, "knowledge_base_not_ready", "KB has no active release", retryable=False)
         except GraphMissingError as exc:
@@ -166,7 +167,7 @@ class MCPGatewayService:
 
         return {
             "kb_id": kb_id,
-            "release_id": self._active_release_id(kb_id),
+            "release_id": await self._active_release_id(kb_id),
             **result,
         }
 
@@ -174,18 +175,18 @@ class MCPGatewayService:
     # internal
     # ------------------------------------------------------------------
 
-    def _load_graph(self, kb_id: str) -> nx.Graph:
-        kb = self.knowledge_bases.get(kb_id)
+    async def _load_graph(self, kb_id: str) -> nx.Graph:
+        kb = await self.knowledge_bases.get(kb_id)
         if kb is None:
             raise KBNotReadyError(f"KB {kb_id} not found")
         if not kb.active_release_id:
             raise KBNotReadyError(f"KB {kb_id} has no active release")
 
-        release = self.releases.get(kb.active_release_id)
+        release = await self.releases.get(kb.active_release_id)
         if release is None:
             raise KBNotReadyError(f"Active release {kb.active_release_id} not found")
 
-        graph_path = self._resolve_graph_path(release)
+        graph_path = await self._resolve_graph_path(release)
         if graph_path is None or not Path(graph_path).exists():
             raise GraphMissingError(f"No graph artifact for KB {kb_id}")
 
@@ -195,33 +196,35 @@ class MCPGatewayService:
 
         return GraphifyQueryAdapter.load_graph(str(path))
 
-    def _resolve_graph_path(self, release) -> str | None:
-        artifacts = (
-            self.session.query(ArtifactVersion)
-            .filter(ArtifactVersion.release_id == release.id)
-            .all()
+    async def _resolve_graph_path(self, release) -> str | None:
+        stmt = (
+            select(ArtifactVersion)
+            .where(ArtifactVersion.release_id == release.id)
         )
+        result = await self.session.execute(stmt)
+        artifacts = result.scalars().all()
         for a in artifacts:
             if a.artifact_type == "graph" and a.artifact_status == "ready":
                 return a.artifact_path
         return None
 
-    def _active_release_id(self, kb_id: str) -> str | None:
-        kb = self.knowledge_bases.get(kb_id)
+    async def _active_release_id(self, kb_id: str) -> str | None:
+        kb = await self.knowledge_bases.get(kb_id)
         return kb.active_release_id if kb else None
 
-    def _build_artifact_refs(self, kb_id: str) -> dict[str, str]:
-        kb = self.knowledge_bases.get(kb_id)
+    async def _build_artifact_refs(self, kb_id: str) -> dict[str, str]:
+        kb = await self.knowledge_bases.get(kb_id)
         if not kb or not kb.active_release_id:
             return {}
-        release = self.releases.get(kb.active_release_id)
+        release = await self.releases.get(kb.active_release_id)
         if not release:
             return {}
-        artifacts = (
-            self.session.query(ArtifactVersion)
-            .filter(ArtifactVersion.release_id == release.id)
-            .all()
+        stmt = (
+            select(ArtifactVersion)
+            .where(ArtifactVersion.release_id == release.id)
         )
+        result = await self.session.execute(stmt)
+        artifacts = result.scalars().all()
         return {a.artifact_type: a.artifact_path for a in artifacts if a.artifact_status == "ready"}
 
     @staticmethod

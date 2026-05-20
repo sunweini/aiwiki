@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.binding import KnowledgeBaseSourceBinding
 from app.db.models.knowledge_base import KnowledgeBase
@@ -12,12 +12,12 @@ from app.schemas.knowledge_base import KnowledgeBaseCreate
 
 
 class KnowledgeBaseService:
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         self.session = session
         self.knowledge_base_repository = KnowledgeBaseRepository(session)
         self.binding_repository = BindingRepository(session)
 
-    def create_knowledge_base(self, project_id: str, payload: KnowledgeBaseCreate) -> KnowledgeBase:
+    async def create_knowledge_base(self, project_id: str, payload: KnowledgeBaseCreate) -> KnowledgeBase:
         now = datetime.now(UTC)
         knowledge_base = KnowledgeBase(
             id=f"kb_{uuid4().hex[:12]}",
@@ -36,7 +36,7 @@ class KnowledgeBaseService:
         )
         knowledge_base.created_at = now
         knowledge_base.updated_at = now
-        knowledge_base = self.knowledge_base_repository.create(knowledge_base)
+        knowledge_base = await self.knowledge_base_repository.create(knowledge_base)
 
         from pathlib import Path
         from app.config import settings
@@ -66,16 +66,30 @@ class KnowledgeBaseService:
 
         return knowledge_base
 
-    def get_knowledge_base(self, kb_id: str) -> KnowledgeBase:
-        return self.knowledge_base_repository.get(kb_id)
+    async def get_knowledge_base(self, kb_id: str) -> KnowledgeBase:
+        return await self.knowledge_base_repository.get(kb_id)
 
-    def list_knowledge_bases(self, project_id: str, page: int = 1, page_size: int = 20) -> tuple[list[KnowledgeBase], int]:
-        items = self.knowledge_base_repository.list(project_id=project_id)
+    async def list_knowledge_bases(self, project_id: str, page: int = 1, page_size: int = 20) -> tuple[list[KnowledgeBase], int]:
+        items = await self.knowledge_base_repository.list(project_id=project_id)
         total = len(items)
         start = (page - 1) * page_size
         return items[start:start + page_size], total
 
-    def create_binding(self, kb_id: str, payload: BindingCreate) -> KnowledgeBaseSourceBinding:
+    async def update_knowledge_base(self, kb_id: str, name: str) -> KnowledgeBase:
+        kb = await self.knowledge_base_repository.get(kb_id)
+        if kb is None:
+            raise ValueError("knowledge base not found")
+        kb.name = name
+        kb.updated_at = datetime.now(UTC)
+        return await self.knowledge_base_repository.update(kb)
+
+    async def delete_knowledge_base(self, kb_id: str) -> None:
+        kb = await self.knowledge_base_repository.get(kb_id)
+        if kb is None:
+            raise ValueError("knowledge base not found")
+        await self.knowledge_base_repository.delete(kb)
+
+    async def create_binding(self, kb_id: str, payload: BindingCreate) -> KnowledgeBaseSourceBinding:
         binding = KnowledgeBaseSourceBinding(
             id=f"bind_{uuid4().hex[:12]}",
             knowledge_base_id=kb_id,
@@ -86,4 +100,4 @@ class KnowledgeBaseService:
             exclude_rules_override=payload.exclude_rules_override,
             priority=payload.priority,
         )
-        return self.binding_repository.create(binding)
+        return await self.binding_repository.create(binding)
