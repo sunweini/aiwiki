@@ -1,0 +1,19 @@
+---
+source_file: "yfsc-platform-v2-meituan/assets/app.js"
+type: "code"
+community: "assets_pc_pages_1_switchdataboardperiod"
+location: "L281"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/assets_pc_pages_1_switchdataboardperiod
+---
+
+# renderPointsQr()
+
+## Connections
+- [[app.js]] - `contains` [EXTRACTED]
+- [[showToast()]] - `calls` [EXTRACTED]
+- [[switchQrMode()]] - `calls` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/assets_pc_pages_1_switchdataboardperiod

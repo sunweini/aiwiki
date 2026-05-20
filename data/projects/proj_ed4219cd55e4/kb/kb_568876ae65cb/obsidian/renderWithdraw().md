@@ -1,0 +1,19 @@
+---
+source_file: "yfsc-platform-v2-meituan/assets/pc-pages-2.js"
+type: "code"
+community: "yfsc_platform_v2_meituan_assets_pc_pages_1_js"
+location: "L674"
+tags:
+  - graphify/code
+  - graphify/INFERRED
+  - community/yfsc_platform_v2_meituan_assets_pc_pages_1_js
+---
+
+# renderWithdraw()
+
+## Connections
+- [[antIcon()]] - `calls` [INFERRED]
+- [[pc-pages-2.js]] - `contains` [EXTRACTED]
+- [[shopData()]] - `calls` [INFERRED]
+
+#graphify/code #graphify/INFERRED #community/yfsc_platform_v2_meituan_assets_pc_pages_1_js

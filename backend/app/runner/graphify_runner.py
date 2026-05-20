@@ -672,7 +672,12 @@ class GraphifyRunner:
     def _resolve_key_from_env(ref: str | None) -> str | None:
         if not ref or not ref.startswith("env:"):
             return None
-        return os.environ.get(ref.removeprefix("env:"))
+        key = ref.removeprefix("env:")
+        value = os.environ.get(key)
+        if value:
+            return value
+        from app.config import settings
+        return getattr(settings, key.lower(), None)
 
     @staticmethod
     def _inject_custom_backend(llm_config: dict) -> None:

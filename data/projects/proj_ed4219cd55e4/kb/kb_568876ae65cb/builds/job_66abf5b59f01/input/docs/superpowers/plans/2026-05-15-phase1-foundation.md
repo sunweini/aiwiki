@@ -1,0 +1,1 @@
+/Users/sunweini/同步空间/工作内容/pangu/aiwiki/data/projects/proj_ed4219cd55e4/sources/src_26a686cb6c21/docs/superpowers/plans/2026-05-15-phase1-foundation.md

@@ -50,24 +50,19 @@ class BuildService:
 
     async def enqueue_build(self, job_id: str, kb_id: str, sources: list[dict],
                             llm_config: dict | None = None, project_id: str = "proj_default") -> None:
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         await loop.run_in_executor(
             None,
             self._sync_run_and_persist,
-            job_id, kb_id, sources, llm_config, project_id,
+            job_id, kb_id, sources, llm_config, project_id, loop,
         )
 
-    def _sync_run_and_persist(self, job_id, kb_id, sources, llm_config, project_id):
-        """Runs in thread: sync graphify + bridge to async DB ops."""
+    def _sync_run_and_persist(self, job_id, kb_id, sources, llm_config, project_id, loop):
+        """Runs in thread: sync graphify + bridge to async DB ops via run_coroutine_threadsafe."""
         def on_progress(stage_name: str, status: str, **meta):
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                asyncio.run(self._update_job_stage(job_id, stage_name, status, **meta))
-            else:
-                asyncio.run_coroutine_threadsafe(
-                    self._update_job_stage(job_id, stage_name, status, **meta), loop
-                )
+            asyncio.run_coroutine_threadsafe(
+                self._update_job_stage(job_id, stage_name, status, **meta), loop
+            )
 
         if self.runner is None:
             return
@@ -82,10 +77,16 @@ class BuildService:
         )
 
         try:
-            asyncio.run(self._persist_result(job_id, kb_id, result, project_id))
+            f = asyncio.run_coroutine_threadsafe(
+                self._persist_result(job_id, kb_id, result, project_id), loop
+            )
+            f.result(timeout=120)
         except Exception:
             logger.exception("Failed to persist build result for job %s", job_id)
-            asyncio.run(self._mark_job_failed(job_id, "Persistence error after runner completion"))
+            f = asyncio.run_coroutine_threadsafe(
+                self._mark_job_failed(job_id, "Persistence error after runner completion"), loop
+            )
+            f.result(timeout=30)
 
     async def _update_job_stage(self, job_id: str, stage_name: str, status: str, **meta):
         async with self._session_factory() as session:
