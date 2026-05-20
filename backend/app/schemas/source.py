@@ -14,6 +14,8 @@ class SourceCreate(BaseModel):
     include_rules: list[str] = Field(default_factory=list)
     exclude_rules: list[str] = Field(default_factory=list)
     normalization_options: dict[str, Any] = Field(default_factory=dict)
+    git_tracking_branch: str = "main"
+    git_poll_interval_minutes: int = 0
 
 
 class SourceRead(SourceCreate):
@@ -23,3 +25,4 @@ class SourceRead(SourceCreate):
     last_synced_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
+    git_last_commit: str | None = None
