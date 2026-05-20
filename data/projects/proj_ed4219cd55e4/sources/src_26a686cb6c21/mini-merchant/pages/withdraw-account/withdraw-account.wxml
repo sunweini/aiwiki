@@ -1,8 +1,0 @@
-<view class="mp-card flush" style="margin-top:12px"><view class="mp-section-title">提现账户</view></view>
-<view class="mp-record-row" wx:for="{{accounts}}" wx:key="id">
-  <view class="rr-icon">💳</view>
-  <view class="rr-info"><view class="rr-title">{{item.bank_name}}</view><view class="rr-sub">{{item.bank_account}}</view></view>
-  <text class="tag tag-success">默认</text>
-</view>
-<view style="padding:16px"><button class="mp-btn primary block" bindtap="addAccount">+ 添加账户</button></view>
-<view wx:if="{{!accounts.length}}" class="empty">暂无提现账户</view>

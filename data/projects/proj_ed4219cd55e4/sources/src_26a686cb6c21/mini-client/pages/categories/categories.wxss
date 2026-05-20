@@ -1,2 +1,0 @@
-.cat-nav { padding: 14px 8px; font-size: 13px; text-align: center; border-left: 3px solid transparent; }
-.cat-nav.active { background: #fff; border-left-color: #1677ff; color: #1677ff; font-weight: 500; }
