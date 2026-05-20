@@ -20,6 +20,9 @@ export interface Source {
   last_synced_at: string | null;
   created_at: string;
   updated_at: string;
+  git_tracking_branch: string;
+  git_poll_interval_minutes: number;
+  git_last_commit: string | null;
 }
 
 export type SourceType = "github_repo" | "gitlab_repo" | "doc_site" | "markdown_dir" | "confluence_space";
@@ -78,6 +81,7 @@ export interface BuildJob {
   started_at: string;
   finished_at: string | null;
   error_summary: string | null;
+  current_stage: string | null;
   stages: BuildStage[];
 }
 
