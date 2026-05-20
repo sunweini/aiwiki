@@ -1,0 +1,26 @@
+<view class="mp-data-hero">
+  <view class="dh-title">{{shopName}} · {{today}}</view>
+  <view style="font-size:18px;font-weight:600;margin-top:4px">今日经营概览</view>
+  <view class="dh-row">
+    <view><view class="dh-val">¥{{data.sales}}</view><view class="dh-label">今日销售额</view></view>
+    <view><view class="dh-val">{{data.orders}}</view><view class="dh-label">订单数</view></view>
+    <view><view class="dh-val">¥{{data.avgPrice}}</view><view class="dh-label">客单价</view></view>
+  </view>
+</view>
+
+<view class="mp-data-grid">
+  <view class="dg-card" bindtap="goOrders"><view class="dg-val">{{data.totalOrders}}</view><view class="dg-label">总订单数</view></view>
+  <view class="dg-card"><view class="dg-val" style="color:#52c41a">¥{{data.balance}}</view><view class="dg-label">可提现余额</view></view>
+  <view class="dg-card" bindtap="goVerify"><view class="dg-val">{{data.verifyCount}}</view><view class="dg-label">待核销数</view></view>
+  <view class="dg-card"><view class="dg-val" style="color:#fa8c16">¥{{data.monthSales}}</view><view class="dg-label">本月销售额</view></view>
+</view>
+
+<view class="mp-section-title">快捷入口</view>
+<view class="mp-quick-actions">
+  <view class="qa-item" bindtap="goVerify"><view class="qa-icon">⊞</view>扫码核销</view>
+  <view class="qa-item" bindtap="goOrders"><view class="qa-icon">📋</view>订单管理</view>
+  <view class="qa-item" bindtap="goMenu"><view class="qa-icon">🏪</view>菜单上架</view>
+  <view class="qa-item" bindtap="goFinance"><view class="qa-icon">💰</view>收益提现</view>
+  <view class="qa-item" bindtap="goBusiness"><view class="qa-icon">📊</view>经营数据</view>
+  <view class="qa-item" bindtap="goWithdraw"><view class="qa-icon">💳</view>提现账户</view>
+</view>

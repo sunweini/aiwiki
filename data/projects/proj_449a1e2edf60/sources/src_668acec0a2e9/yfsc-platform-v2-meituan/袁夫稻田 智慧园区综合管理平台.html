@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>袁夫稻田 · 智慧园区综合管理平台 v2.7</title>
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+
+<!-- ============ 平台切换栏 ============ -->
+<div class="platform-switcher">
+  <div class="brand">
+    <div class="logo-icon">🌾</div>
+    袁夫稻田 · 智慧园区综合管理平台
+  </div>
+  <div class="platform-tabs" id="platformTabs">
+    <button class="platform-tab active" data-platform="pc-admin">PC 管理后台</button>
+    <button class="platform-tab" data-platform="mp-admin">小程序·管理端</button>
+    <button class="platform-tab" data-platform="mp-merchant">小程序·商户端</button>
+    <button class="platform-tab" data-platform="mp-client">小程序·客户端</button>
+  </div>
+  <div class="right-info">
+    <span>v2.7 · 视角权限 + 店铺编辑 + 客户管理</span>
+    <span>2026-05-15</span>
+  </div>
+</div>
+
+<!-- ============ PC 管理后台 ============ -->
+<div class="pc-layout active" id="platform-pc-admin">
+  <aside class="pc-sider">
+    <div class="pc-sider-header">
+      <div class="logo">禾</div>
+      <div>
+        <div class="title">智慧园区平台</div>
+        <div class="subtitle">YuanFu RiceField</div>
+      </div>
+    </div>
+
+    <div class="view-switch">
+      <div class="view-switch-label">当前视角</div>
+      <select class="view-switch-select" id="viewSwitch">
+        <option value="platform">🏢 平台总部 · 全局视角</option>
+        <option value="park-hm">🏞️ 黄梅袁夫稻田 · 园区视角</option>
+        <option value="park-wh">🏞️ 武汉袁夫稻田 · 园区视角</option>
+        <option value="shop-hcct">🏪 火车餐厅 · 商户视角</option>
+      </select>
+    </div>
+
+    <nav class="pc-nav" id="pcNav"></nav>
+
+    <div class="pc-sider-footer">
+      <div class="avatar" id="userAvatar">张</div>
+      <div style="flex:1;min-width:0">
+        <div class="name" id="userName">张三</div>
+        <div class="role" id="userRole">平台超级管理员</div>
+      </div>
+      <button class="icon-btn" title="退出登录" onclick="showToast('退出登录')">⎋</button>
+    </div>
+  </aside>
+
+  <main class="pc-main">
+    <header class="pc-header">
+      <nav class="pc-breadcrumb" id="pcBreadcrumb">
+        <span>首页</span>
+      </nav>
+      <div class="pc-header-actions">
+        <button class="icon-btn" title="搜索"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+        <button class="icon-btn" title="通知"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="dot"></span></button>
+        <button class="icon-btn" title="帮助"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>
+        <button class="icon-btn" title="主题设置" onclick="openThemeSettings()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
+      </div>
+    </header>
+    <div class="pc-content" id="pcContent"></div>
+  </main>
+</div>
+
+<!-- ============ 小程序 · 管理端 ============ -->
+<div class="mobile-layout" id="platform-mp-admin">
+  <div class="phone-frame">
+    <div class="phone-statusbar">
+      <span class="time">18:42</span>
+      <span class="icons">●●●● 📶 85</span>
+    </div>
+    <div class="miniapp-header" id="adminHeader">
+      <div class="h-left"><button class="h-btn">☰</button></div>
+      <div class="h-title">袁夫稻田 · 园区管理</div>
+      <div class="h-right"><div class="h-capsule">···  ○</div></div>
+    </div>
+    <div class="miniapp-body" id="adminBody"></div>
+    <div class="miniapp-tabbar" id="adminTabbar">
+      <button class="tab-item active" data-page="dashboard"><span class="tab-icon">⌂</span>首页</button>
+      <button class="tab-item" data-page="shops"><span class="tab-icon">▤</span>商户</button>
+      <button class="tab-item" data-page="scan"><span class="tab-icon">⊞</span>扫码</button>
+      <button class="tab-item" data-page="message"><span class="tab-icon">✉</span>消息</button>
+      <button class="tab-item" data-page="me"><span class="tab-icon">○</span>我的</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 小程序 · 商户端 ============ -->
+<div class="mobile-layout" id="platform-mp-merchant">
+  <div class="phone-frame">
+    <div class="phone-statusbar">
+      <span class="time">18:42</span>
+      <span class="icons">●●●● 📶 85</span>
+    </div>
+    <div class="miniapp-header" id="merchantHeader">
+      <div class="h-left"><button class="h-btn">☰</button></div>
+      <div class="h-title">火车餐厅 · 商户管理</div>
+      <div class="h-right"><div class="h-capsule">···  ○</div></div>
+    </div>
+    <div class="miniapp-body" id="merchantBody"></div>
+    <div class="miniapp-tabbar" id="merchantTabbar">
+      <button class="tab-item active" data-page="dashboard"><span class="tab-icon">⌂</span>经营</button>
+      <button class="tab-item" data-page="orders"><span class="tab-icon">▤</span>订单</button>
+      <button class="tab-item" data-page="verify"><span class="tab-icon">⊞</span>核销</button>
+      <button class="tab-item" data-page="finance"><span class="tab-icon">¥</span>收益</button>
+      <button class="tab-item" data-page="me"><span class="tab-icon">○</span>我的</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 小程序 · 客户端 (按截图风格) ============ -->
+<div class="mobile-layout" id="platform-mp-client">
+  <div class="phone-frame">
+    <div class="phone-statusbar">
+      <span class="time">18:42</span>
+      <span class="icons">●●●● 📶 85</span>
+    </div>
+    <div class="miniapp-header" id="clientHeader">
+      <div class="h-left"><button class="h-btn" id="clientHeaderLeft">☰</button></div>
+      <div class="h-title" id="clientHeaderTitle">袁夫稻田线上商城</div>
+      <div class="h-right"><div class="h-capsule">···  ○</div></div>
+    </div>
+    <div class="miniapp-body" id="clientBody"></div>
+    <div class="miniapp-tabbar" id="clientTabbar">
+      <button class="tab-item active" data-page="home"><span class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>首页</button>
+      <button class="tab-item" data-page="memberqr"><span class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 012-2h2"/><path d="M17 3h2a2 2 0 012 2v2"/><path d="M21 17v2a2 2 0 01-2 2h-2"/><path d="M7 21H5a2 2 0 01-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></span>亮码支付</button>
+      <button class="tab-item" data-page="cart"><span class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></span>购物车</button>
+      <button class="tab-item" data-page="me"><span class="tab-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>个人中心</button>
+    </div>
+  </div>
+</div>
+
+<!-- 客户端·会员码全屏蒙层 -->
+<div class="memberqr-overlay" id="memberQrOverlay">
+  <div class="memberqr-panel">
+    <button class="memberqr-close" onclick="closeMemberQr()">✕</button>
+    <div class="memberqr-head">
+      <div class="memberqr-avatar">稻</div>
+      <div>
+        <div style="font-size:17px;font-weight:600;color:#fff">稻田守望者</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:2px">会员</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:26px;font-weight:700;color:#fff;letter-spacing:-0.5px">¥<span id="memberQrBal">130.00</span></div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.7)">可用余额</div>
+      </div>
+    </div>
+    <div class="memberqr-card">
+      <div class="memberqr-tabs">
+        <button class="memberqr-tab active" onclick="switchQrMode(this,'pay')">付款码</button>
+        <button class="memberqr-tab" onclick="switchQrMode(this,'member')">会员码</button>
+        <button class="memberqr-tab" onclick="switchQrMode(this,'points')">积分核销</button>
+      </div>
+      <div class="memberqr-codebox">
+        <div class="memberqr-qrcode" id="memberQrSvg">
+          <svg viewBox="0 0 100 100" width="220" height="220">
+            <rect width="100" height="100" fill="#fff"/>
+            <g id="qrData"></g>
+            <rect x="0" y="0" width="35" height="35" fill="#fff"/>
+            <rect x="0" y="0" width="35" height="35" fill="none" stroke="#000" stroke-width="4"/>
+            <rect x="10" y="10" width="15" height="15" fill="#000" rx="1"/>
+            <rect x="65" y="0" width="35" height="35" fill="#fff"/>
+            <rect x="65" y="0" width="35" height="35" fill="none" stroke="#000" stroke-width="4"/>
+            <rect x="75" y="10" width="15" height="15" fill="#000" rx="1"/>
+            <rect x="0" y="65" width="35" height="35" fill="#fff"/>
+            <rect x="0" y="65" width="35" height="35" fill="none" stroke="#000" stroke-width="4"/>
+            <rect x="10" y="75" width="15" height="15" fill="#000" rx="1"/>
+            <rect x="42" y="42" width="16" height="16" fill="#fff"/>
+            <rect x="44" y="44" width="12" height="12" rx="2" fill="#1677ff"/>
+            <text x="50" y="54" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">禾</text>
+          </svg>
+        </div>
+        <div class="memberqr-barcode" style="display:none">
+          <div style="display:flex;gap:2px;justify-content:center;align-items:flex-end;height:50px" id="memberBarcode"></div>
+          <div style="text-align:center;font-family:monospace;font-size:13px;color:#666;margin-top:6px;letter-spacing:3px">8821 5023 9942 7163</div>
+        </div>
+        <div class="memberqr-tip">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#52c41a;margin-right:6px;animation:pulse 1.5s infinite"></span>
+          二维码每 30 秒自动刷新 · 请勿截图分享
+        </div>
+        <div class="memberqr-actions">
+          <button class="memberqr-action-btn" onclick="refreshQrCode()"><span style="font-size:16px">↻</span>刷新</button>
+          <button class="memberqr-action-btn"><span style="font-size:16px">+</span>调亮屏幕</button>
+          <button class="memberqr-action-btn" onclick="renderMpClient('recharge');closeMemberQr()" style="background:linear-gradient(135deg,#ff4d4f,#ff7875);color:#fff;border-color:#ff4d4f;font-weight:600"><span style="font-size:18px">¥</span>充值</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modal Container ============ -->
+<div class="modal-mask" id="modalMask">
+  <div class="modal" id="modalEl">
+    <div class="modal-head" id="modalHead">
+      <span id="modalTitle">标题</span>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script src="assets/pc-data.js"></script>
+<script src="assets/pc-pages-1.js"></script>
+<script src="assets/pc-pages-2.js"></script>
+<script src="assets/pc-pages-3.js"></script>
+<script src="assets/pc-pages-mp.js"></script>
+<script src="assets/mp-admin.js"></script>
+<script src="assets/mp-merchant.js"></script>
+<script src="assets/mp-client.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<view wx:for="{{messages}}" wx:key="id" class="mp-record-row" bindtap="viewDetail" data-id="{{item.id}}">
+  <view class="rr-icon" style="background:{{item.color}}"><text>{{item.icon}}</text></view>
+  <view class="rr-info">
+    <view class="rr-title">{{item.title}}</view>
+    <view class="rr-sub">{{item.time}} · {{item.content}}</view>
+  </view>
+  <view class="tag {{item.tagType}}" wx:if="{{item.tag}}">{{item.tag}}</view>
+</view>
+<view wx:if="{{messages.length === 0}}" class="empty">
+  <view style="font-size:48px;opacity:0.3;margin-bottom:12px">✉</view>
+  <view>暂无消息</view>
+</view>

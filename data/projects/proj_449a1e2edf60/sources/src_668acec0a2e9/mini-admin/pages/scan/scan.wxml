@@ -1,0 +1,36 @@
+<view class="scan-modes">
+  <view class="scan-mode {{mode === 'order' ? 'active' : ''}}" bindtap="setMode" data-mode="order">订单核销</view>
+  <view class="scan-mode {{mode === 'pay' ? 'active' : ''}}" bindtap="setMode" data-mode="pay">收款核销</view>
+  <view class="scan-mode {{mode === 'meituan' ? 'active' : ''}}" bindtap="setMode" data-mode="meituan">美团验券</view>
+  <view class="scan-mode {{mode === 'douyin' ? 'active' : ''}}" bindtap="setMode" data-mode="douyin">抖音验券</view>
+</view>
+
+<view class="mp-card" style="text-align:center;padding:40px 20px">
+  <view wx:if="{{mode === 'order'}}">
+    <view style="font-size:48px;margin-bottom:16px">📋</view>
+    <view style="font-size:16px;font-weight:500;margin-bottom:12px">扫描订单二维码</view>
+    <view style="font-size:13px;color:rgba(0,0,0,0.45)">点击下方按钮打开扫码，核销已支付订单</view>
+  </view>
+  <view wx:elif="{{mode === 'pay'}}">
+    <view style="font-size:48px;margin-bottom:16px">💰</view>
+    <view style="font-size:16px;font-weight:500;margin-bottom:12px">扫描付款码</view>
+    <view style="font-size:13px;color:rgba(0,0,0,0.45)">扫描客户微信付款码，完成收款</view>
+  </view>
+  <view wx:elif="{{mode === 'meituan'}}">
+    <view style="font-size:48px;margin-bottom:16px">🎫</view>
+    <view style="font-size:16px;font-weight:500;margin-bottom:12px">美团验券</view>
+    <view style="font-size:13px;color:rgba(0,0,0,0.45)">扫描美团团购券码，完成核销</view>
+  </view>
+  <view wx:else>
+    <view style="font-size:48px;margin-bottom:16px">🎵</view>
+    <view style="font-size:16px;font-weight:500;margin-bottom:12px">抖音验券</view>
+    <view style="font-size:13px;color:rgba(0,0,0,0.45)">扫描抖音团购券码，完成核销</view>
+  </view>
+  <button class="mp-btn primary block" style="margin-top:24px" bindtap="startScan">开始扫码</button>
+</view>
+
+<view wx:if="{{lastResult}}" class="mp-card flush" style="margin-top:8px">
+  <view style="font-size:15px;font-weight:500;margin-bottom:8px">最近核销</view>
+  <view style="font-size:14px;color:rgba(0,0,0,0.65)">{{lastResult.name}}</view>
+  <view style="font-size:12px;color:rgba(0,0,0,0.45);margin-top:4px">{{lastResult.time}} · {{lastResult.mode}}</view>
+</view>

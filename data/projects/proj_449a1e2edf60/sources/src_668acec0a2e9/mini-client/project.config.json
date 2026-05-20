@@ -1,0 +1,13 @@
+{
+  "description": "袁夫稻田 · 客户端小程序",
+  "appid": "",
+  "projectname": "mini-client",
+  "miniprogramRoot": "./",
+  "compileType": "miniprogram",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "postcss": true,
+    "minified": true
+  }
+}

@@ -26,48 +26,49 @@ async def sqlite_engine():
 
 
 def test_enqueue_build_calls_runner_once() -> None:
-    """Sync test — _sync_run_and_persist uses asyncio.run internally."""
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    """Sync test — uses executor thread + run_coroutine_threadsafe like production."""
     import asyncio
+    import concurrent.futures
 
-    async def _setup():
+    async def _run_test():
+        engine = create_async_engine("sqlite+aiosqlite:///:memory:")
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
-    asyncio.run(_setup())
+        session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-    session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        runner = Mock()
+        runner.run.return_value = {
+            "job_id": "job_1",
+            "kb_id": "kb_1",
+            "stages": [],
+            "sources": [{"id": "src_1"}],
+            "graph_ready": True,
+            "release": None,
+            "artifacts": [],
+            "stats": {},
+        }
+        service = BuildService(session_factory=session_factory, runner=runner)
 
-    runner = Mock()
-    runner.run.return_value = {
-        "job_id": "job_1",
-        "kb_id": "kb_1",
-        "stages": [],
-        "sources": [{"id": "src_1"}],
-        "graph_ready": True,
-        "release": None,
-        "artifacts": [],
-        "stats": {},
-    }
-    service = BuildService(session_factory=session_factory, runner=runner)
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(
+            None,
+            service._sync_run_and_persist,
+            "job_1", "kb_1", [{"id": "src_1"}], {}, "proj_default", loop,
+        )
 
-    service._sync_run_and_persist(
-        "job_1", "kb_1", [{"id": "src_1"}], {}, "proj_default"
-    )
+        runner.run.assert_called_once_with(
+            job_id="job_1",
+            kb_id="kb_1",
+            sources=[{"id": "src_1"}],
+            llm_config={},
+            progress_callback=ANY,
+            project_id="proj_default",
+        )
 
-    runner.run.assert_called_once_with(
-        job_id="job_1",
-        kb_id="kb_1",
-        sources=[{"id": "src_1"}],
-        llm_config={},
-        progress_callback=ANY,
-        project_id="proj_default",
-    )
-
-    async def _cleanup():
         await engine.dispose()
 
-    asyncio.run(_cleanup())
+    asyncio.run(_run_test())
 
 
 @pytest.mark.asyncio
