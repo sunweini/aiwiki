@@ -1,0 +1,16 @@
+<view class="scan-modes">
+  <view class="scan-mode {{mode === 'order' ? 'active' : ''}}" bindtap="setMode" data-mode="order">订单核销</view>
+  <view class="scan-mode {{mode === 'payment' ? 'active' : ''}}" bindtap="setMode" data-mode="payment">收款核销</view>
+  <view class="scan-mode {{mode === 'meituan' ? 'active' : ''}}" bindtap="setMode" data-mode="meituan">美团验券</view>
+  <view class="scan-mode {{mode === 'douyin' ? 'active' : ''}}" bindtap="setMode" data-mode="douyin">抖音验券</view>
+</view>
+<view class="mp-card" style="margin:20px 12px;text-align:center;padding:40px 20px">
+  <view style="font-size:48px;margin-bottom:16px;color:#1677ff">⊞</view>
+  <button class="mp-btn primary block" bindtap="handleScan">扫一扫核销</button>
+</view>
+<view class="mp-card flush" wx:if="{{result}}">
+  <view style="text-align:center;padding:20px">
+    <view style="font-size:48px;color:#52c41a">✓</view>
+    <view style="font-size:16px;font-weight:600;margin-top:8px">{{result.message}}</view>
+  </view>
+</view>

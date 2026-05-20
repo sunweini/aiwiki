@@ -10,7 +10,7 @@ class SourceCreate(BaseModel):
     source_ref: str
     description: str | None = None
     auth_config: dict[str, Any] = Field(default_factory=dict)
-    sync_strategy: str
+    sync_strategy: str = "manual"
     include_rules: list[str] = Field(default_factory=list)
     exclude_rules: list[str] = Field(default_factory=list)
     normalization_options: dict[str, Any] = Field(default_factory=dict)

@@ -290,7 +290,7 @@ class GraphifyRunner:
         # --- report ---
         if progress_callback:
             progress_callback("report", "running")
-        out_dir = ws / "graphify-out"
+        out_dir = ws / "out"
         report_md = ""
         report_ok = True
         if communities:

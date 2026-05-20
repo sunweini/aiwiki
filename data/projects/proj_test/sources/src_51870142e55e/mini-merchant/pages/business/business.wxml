@@ -1,0 +1,7 @@
+<view class="mp-data-hero"><view class="dh-title">经营数据</view><view style="font-size:13px;opacity:0.8;margin-top:4px">日报 · 周报 · 月报</view></view>
+<view class="mp-data-grid">
+  <view class="dg-card"><view class="dg-val">¥12,860</view><view class="dg-label">今日销售额</view></view>
+  <view class="dg-card"><view class="dg-val">33</view><view class="dg-label">今日订单</view></view>
+  <view class="dg-card"><view class="dg-val">¥89,420</view><view class="dg-label">本月销售额</view></view>
+  <view class="dg-card"><view class="dg-val">218</view><view class="dg-label">本月订单</view></view>
+</view>

@@ -1,0 +1,25 @@
+<view class="mp-data-hero">
+  <view class="dh-title">账户余额</view>
+  <view style="font-size:36px;font-weight:700;margin-top:8px">¥{{balance}}</view>
+  <view class="dh-label">可用余额</view>
+</view>
+
+<view class="mp-data-grid">
+  <view class="dg-card" bindtap="showWithdraw"><view class="dg-val">💰</view><view class="dg-label">申请提现</view></view>
+  <view class="dg-card"><view class="dg-val">¥{{formatMoney(frozenAmount)}}</view><view class="dg-label">冻结金额</view></view>
+  <view class="dg-card"><view class="dg-val">¥{{formatMoney(totalEarned)}}</view><view class="dg-label">累计收益</view></view>
+  <view class="dg-card"><view class="dg-val">{{withdrawCount}}</view><view class="dg-label">提现次数</view></view>
+</view>
+
+<view class="mp-section-title">提现记录</view>
+<view class="mp-record-list">
+  <view class="mp-record-row" wx:for="{{withdraws}}" wx:key="id">
+    <view class="rr-icon">💰</view>
+    <view class="rr-info">
+      <view class="rr-title">提现 ¥{{item.amount}}</view>
+      <view class="rr-sub">{{item.created_at}}</view>
+    </view>
+    <text class="tag {{item.status === '已打款' ? 'tag-success' : 'tag-warning'}}">{{item.status}}</text>
+  </view>
+  <view wx:if="{{!withdraws.length}}" class="empty">暂无提现记录</view>
+</view>

@@ -1,0 +1,37 @@
+<view class="mp-data-hero">
+  <view class="dh-title">{{parkName}} · {{today}}</view>
+  <view style="font-size:18px;font-weight:600;margin-top:4px">今日经营概览</view>
+  <view class="dh-row">
+    <view><view class="dh-val">¥{{formatMoney(data.sales)}}</view><view class="dh-label">今日销售额</view></view>
+    <view><view class="dh-val">{{data.orders}}</view><view class="dh-label">订单数</view></view>
+    <view><view class="dh-val">{{data.flow}}</view><view class="dh-label">客流量</view></view>
+  </view>
+</view>
+
+<view class="mp-data-grid">
+  <view class="dg-card"><view class="dg-val">{{data.shops}}</view><view class="dg-label">商户总数</view></view>
+  <view class="dg-card"><view class="dg-val">{{data.users}}</view><view class="dg-label">累计用户</view></view>
+  <view class="dg-card"><view class="dg-val" style="color:#ff4d4f">{{data.refunds}}</view><view class="dg-label">待处理退款</view></view>
+  <view class="dg-card"><view class="dg-val">¥{{formatMoney(data.monthSales)}}</view><view class="dg-label">本月销售额</view></view>
+</view>
+
+<view class="mp-section-title">快捷功能</view>
+<view class="mp-quick-actions">
+  <view class="qa-item" bindtap="goScan"><view class="qa-icon">⊞</view>扫码核销</view>
+  <view class="qa-item" bindtap="goOrders"><view class="qa-icon">📋</view>订单管理</view>
+  <view class="qa-item" bindtap="goShops"><view class="qa-icon">🏪</view>商户切换</view>
+  <view class="qa-item" bindtap="switchPark"><view class="qa-icon">⇄</view>切换园区</view>
+</view>
+
+<view class="mp-section-title">今日动态</view>
+<view class="mp-record-list">
+  <view class="mp-record-row" wx:for="{{activities}}" wx:key="id">
+    <view class="rr-icon"><text>{{item.icon}}</text></view>
+    <view class="rr-info">
+      <view class="rr-title">{{item.title}}</view>
+      <view class="rr-sub">{{item.time}} · {{item.shop}}</view>
+    </view>
+    <view class="rr-amount minus">{{item.amount}}</view>
+  </view>
+  <view wx:if="{{activities.length === 0}}" class="empty">暂无今日动态</view>
+</view>

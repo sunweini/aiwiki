@@ -1,0 +1,25 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/categories/categories",
+    "pages/product/product",
+    "pages/cart/cart",
+    "pages/checkout/checkout",
+    "pages/recharge/recharge",
+    "pages/member-qr/member-qr",
+    "pages/activities/activities",
+    "pages/gate/gate",
+    "pages/me/me"
+  ],
+  "window": { "backgroundTextStyle": "light", "navigationBarBackgroundColor": "#fff", "navigationBarTitleText": "袁夫稻田", "navigationBarTextStyle": "black" },
+  "tabBar": {
+    "color": "#999", "selectedColor": "#1677ff", "backgroundColor": "#fff", "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "static/tab-home.png", "selectedIconPath": "static/tab-home-active.png" },
+      { "pagePath": "pages/categories/categories", "text": "商品分类", "iconPath": "static/tab-shop.png", "selectedIconPath": "static/tab-shop-active.png" },
+      { "pagePath": "pages/cart/cart", "text": "购物车", "iconPath": "static/tab-cart.png", "selectedIconPath": "static/tab-cart-active.png" },
+      { "pagePath": "pages/me/me", "text": "个人中心", "iconPath": "static/tab-me.png", "selectedIconPath": "static/tab-me-active.png" }
+    ]
+  },
+  "style": "v2", "sitemapLocation": "sitemap.json"
+}

@@ -1,0 +1,30 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/shops/shops",
+    "pages/scan/scan",
+    "pages/messages/messages",
+    "pages/me/me"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#1677ff",
+    "navigationBarTitleText": "园区管理",
+    "navigationBarTextStyle": "white"
+  },
+  "tabBar": {
+    "color": "#999",
+    "selectedColor": "#1677ff",
+    "backgroundColor": "#fff",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "首页", "iconPath": "static/tab-home.png", "selectedIconPath": "static/tab-home-active.png" },
+      { "pagePath": "pages/shops/shops", "text": "商户", "iconPath": "static/tab-shop.png", "selectedIconPath": "static/tab-shop-active.png" },
+      { "pagePath": "pages/scan/scan", "text": "扫码", "iconPath": "static/tab-scan.png", "selectedIconPath": "static/tab-scan-active.png" },
+      { "pagePath": "pages/messages/messages", "text": "消息", "iconPath": "static/tab-msg.png", "selectedIconPath": "static/tab-msg-active.png" },
+      { "pagePath": "pages/me/me", "text": "我的", "iconPath": "static/tab-me.png", "selectedIconPath": "static/tab-me-active.png" }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
