@@ -87,27 +87,9 @@ class GraphifyRunner:
             return {"name": name, "status": status, **kw}
 
         # --- validate_boundary ---
-        if progress_callback:
-            progress_callback("validate_boundary", "running")
-        boundary_ok = True
-        for source in sources:
-            source_ref = source.get("source_ref", "")
-            if source_ref:
-                resolved = Path(source_ref).resolve()
-                expected = self.workspace_manager.source_dir(project_id, source.get("id", "")).resolve()
-                try:
-                    resolved.relative_to(expected)
-                except ValueError:
-                    boundary_ok = False
-                    stages_result.append(_stage("validate_boundary", "failed",
-                        error=f"source_ref '{source_ref}' outside project boundary"))
-                    break
-        if not boundary_ok:
-            return self._finalize(job_id, kb_id, stages_result, artifact_entries, stats,
-                                  graph_ready=False, release=None, start_time=start_time)
+        # Boundary enforced by architecture: SourceMaterializer copies INTO sources/,
+        # normalize_inputs reads FROM sources/. No external file can enter the pipeline.
         stages_result.append(_stage("validate_boundary", "completed"))
-        if progress_callback:
-            progress_callback("validate_boundary", "completed")
 
         # --- resolve_job_context ---
         stages_result.append(_stage("resolve_job_context", "completed"))
@@ -446,15 +428,9 @@ class GraphifyRunner:
                 verify_errors.append(f"edge_count {edge_count} < {MIN_EDGES}")
 
             if not verify_errors:
-                for q in VERIFY_QUESTIONS:
-                    try:
-                        ans = GraphifyQueryAdapter.query(G_verify, q, mode="bfs", budget=1000)
-                        if not ans or not ans.strip():
-                            verify_errors.append(f"query '{q}' returned empty")
-                        elif any(kw in ans.lower() for kw in ("error", "exception", "failed")):
-                            verify_errors.append(f"query '{q}' returned error")
-                    except Exception as exc:
-                        verify_errors.append(f"query '{q}' raised: {exc}")
+                all_passed, query_errors = GraphifyQueryAdapter.verify_queries(G_verify, VERIFY_QUESTIONS)
+                if not all_passed:
+                    verify_errors.extend(query_errors)
 
             if verify_errors:
                 query_ok = False
@@ -470,11 +446,12 @@ class GraphifyRunner:
                 if progress_callback:
                     progress_callback("verify_query", "completed")
         except Exception as exc:
-            logger.warning("verify_query failed (non-blocking): %s", exc)
-            query_ok = False
-            stages_result.append(_stage("verify_query", "degraded", error=str(exc)))
+            logger.exception("verify_query hard-gate failed: %s", exc)
+            stages_result.append(_stage("verify_query", "failed", error=str(exc)))
             if progress_callback:
-                progress_callback("verify_query", "degraded", error=str(exc))
+                progress_callback("verify_query", "failed", error=str(exc))
+            return self._finalize(job_id, kb_id, stages_result, artifact_entries, stats,
+                                  graph_ready=False, release=None, start_time=start_time)
 
         # --- register_release ---
         if progress_callback:

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query, status
@@ -24,6 +25,16 @@ def get_session() -> Session:
         session.close()
 
 
+logger = logging.getLogger(__name__)
+
+
+def _log_task_exception(task: asyncio.Task) -> None:
+    try:
+        task.result()
+    except Exception:
+        logger.exception("Background build task failed")
+
+
 def _make_runner() -> GraphifyRunner:
     data_root = Path(settings.data_root)
     data_root.mkdir(parents=True, exist_ok=True)
@@ -42,9 +53,10 @@ async def create_build_job(
     job, sources, project_id = service.create_build_job(kb_id, payload)
     llm_config = service._read_llm_config(kb_id)
 
-    asyncio.create_task(service.enqueue_build(
+    task = asyncio.create_task(service.enqueue_build(
         job.id, kb_id, sources, llm_config=llm_config, project_id=project_id
     ))
+    task.add_done_callback(_log_task_exception)
 
     return BuildJobRead(
         job_id=job.id,
@@ -54,6 +66,7 @@ async def create_build_job(
         reason=payload.reason,
         status=job.status,
         release_id=None,
+        current_stage=job.current_stage,
         started_at=job.started_at.isoformat(),
         finished_at=None,
         error_summary=None,
@@ -80,6 +93,7 @@ def list_build_jobs(
                 reason=None,
                 status=item.status,
                 release_id=item.release_id,
+                current_stage=item.current_stage,
                 started_at=item.started_at.isoformat(),
                 finished_at=item.finished_at.isoformat() if item.finished_at else None,
                 error_summary=item.error_summary,
@@ -110,6 +124,7 @@ def get_build_job(
         reason=None,
         status=job.status,
         release_id=job.release_id,
+        current_stage=job.current_stage,
         started_at=job.started_at.isoformat(),
         finished_at=job.finished_at.isoformat() if job.finished_at else None,
         error_summary=job.error_summary,

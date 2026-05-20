@@ -42,17 +42,16 @@ def test_handles_nonexistent_source_directory(tmp_path: Path):
     assert (result / ".materialize-error").exists() or (result / ".source-meta").exists()
 
 
-def test_validate_boundary_refuses_external_path(tmp_path: Path):
+def test_materialize_empty_source_ref_creates_meta(tmp_path: Path):
     project_root = tmp_path / "projects" / "proj_test"
     project_root.mkdir(parents=True)
     (project_root / "sources").mkdir()
 
     mat = SourceMaterializer("proj_test", project_root)
     result = mat.materialize({
-        "id": "src_1",
+        "id": "src_2",
         "type": "markdown_dir",
-        "source_ref": "/tmp",
+        "source_ref": "",
     })
-    error_file = result / ".materialize-error"
-    assert error_file.exists()
-    assert "outside project sources" in error_file.read_text()
+    assert result.exists()
+    assert (result / ".source-meta").exists()

@@ -12,6 +12,8 @@ class BuildJobRead(BuildJobCreate):
     knowledge_base_id: str
     status: str
     release_id: str | None = None
+    current_stage: str | None = None
     started_at: str
     finished_at: str | None = None
     error_summary: str | None = None
+    stages: list[dict] | None = None
