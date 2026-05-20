@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     db_pool_size: int = 10
     db_max_overflow: int = 20
     db_pool_recycle_seconds: int = 3600
+    db_pool_pre_ping: bool = True
     redis_url: str = "redis://localhost:6379/0"
     data_root: str = str(Path(__file__).resolve().parent.parent.parent / "data")
 

@@ -1,9 +1,10 @@
 from datetime import UTC, datetime
 
 import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
-from app.db.base import engine, SessionLocal
+from app.db.database import AsyncSessionLocal
 from app.db.models.artifact_version import ArtifactVersion
 from app.db.models.build_job import BuildJob
 from app.db.models.knowledge_base import KnowledgeBase
@@ -12,76 +13,72 @@ from app.db.models.release import Release
 from app.main import app
 
 
-@pytest.fixture(autouse=True)
-def create_tables() -> None:
-    Project.__table__.create(bind=engine, checkfirst=True)
-    KnowledgeBase.__table__.create(bind=engine, checkfirst=True)
-    Release.__table__.create(bind=engine, checkfirst=True)
-    BuildJob.__table__.create(bind=engine, checkfirst=True)
-    ArtifactVersion.__table__.create(bind=engine, checkfirst=True)
-    yield
-    ArtifactVersion.__table__.drop(bind=engine, checkfirst=True)
-    BuildJob.__table__.drop(bind=engine, checkfirst=True)
-    Release.__table__.drop(bind=engine, checkfirst=True)
-    KnowledgeBase.__table__.drop(bind=engine, checkfirst=True)
-    Project.__table__.drop(bind=engine, checkfirst=True)
-
-
-@pytest.fixture(autouse=True)
-def seeded_data() -> datetime:
-    with SessionLocal() as session:
+@pytest_asyncio.fixture(autouse=True)
+async def seeded_data() -> datetime:
+    async with AsyncSessionLocal() as session:
         now = datetime.now(UTC)
-        session.add(Project(id="proj_checkout", name="Checkout", description=None))
-        session.add(
-            KnowledgeBase(
-                id="kb_checkout_core",
-                project_id="proj_checkout",
-                name="Checkout Core",
-                status="ready",
-                visibility="org_shared",
-                active_release_id="rel_2026_05_19_001",
-                created_at=now,
-                updated_at=now,
-            )
+        p = Project(id="proj_checkout", name="Checkout", description=None)
+        session.add(p)
+        await session.flush()
+
+        kb = KnowledgeBase(
+            id="kb_checkout_core",
+            project_id="proj_checkout",
+            name="Checkout Core",
+            status="ready",
+            visibility="org_shared",
+            active_release_id=None,
+            created_at=now, updated_at=now,
         )
-        session.add(
-            Release(
-                id="rel_2026_05_19_001",
-                knowledge_base_id="kb_checkout_core",
-                build_job_id="job_2026_05_19_0021",
-                version="v1",
-                status="active",
-                artifact_status={"obsidian_vault": "active"},
-                created_at=now,
-            )
+        session.add(kb)
+        await session.flush()
+
+        # BuildJob first: release_id nullable, so can be None
+        bj = BuildJob(
+            id="job_2026_05_19_0021",
+            knowledge_base_id="kb_checkout_core",
+            build_type="full_build",
+            status="succeeded",
+            release_id=None,
+            error_summary=None,
+            created_at=now, started_at=now,
         )
-        session.add(
-            BuildJob(
-                id="job_2026_05_19_0021",
-                knowledge_base_id="kb_checkout_core",
-                build_type="full_build",
-                status="succeeded",
-                release_id="rel_2026_05_19_001",
-                error_summary=None,
-                created_at=now,
-                started_at=now,
-            )
+        session.add(bj)
+        await session.flush()
+
+        # Release references existing BuildJob (build_job_id NOT NULL)
+        rel = Release(
+            id="rel_2026_05_19_001",
+            knowledge_base_id="kb_checkout_core",
+            build_job_id="job_2026_05_19_0021",
+            version="v1",
+            status="active",
+            artifact_status={"obsidian_vault": "active"},
+            created_at=now,
         )
-        session.add(
-            ArtifactVersion(
-                id="art_2026_05_19_001",
-                release_id="rel_2026_05_19_001",
-                artifact_type="obsidian_vault",
-                artifact_status="active",
-                artifact_path="artifacts/kb_checkout_core/rel_2026_05_19_001/vault",
-                artifact_meta={"format": "obsidian"},
-            )
+        session.add(rel)
+        await session.flush()
+
+        av = ArtifactVersion(
+            id="art_2026_05_19_001",
+            release_id="rel_2026_05_19_001",
+            artifact_type="obsidian_vault",
+            artifact_status="active",
+            artifact_path="artifacts/kb_checkout_core/rel_2026_05_19_001/vault",
+            artifact_meta={"format": "obsidian"},
         )
-        session.commit()
+        session.add(av)
+        await session.flush()
+
+        # Resolve circular refs
+        kb.active_release_id = rel.id
+        bj.release_id = rel.id
+        await session.flush()
+        await session.commit()
     return now
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_list_releases_returns_paginated_payload(seeded_data: datetime) -> None:
     transport = ASGITransport(app=app)
 
@@ -98,10 +95,12 @@ async def test_list_releases_returns_paginated_payload(seeded_data: datetime) ->
     assert response.json()["items"][0]["version"] == "v1"
     assert response.json()["items"][0]["status"] == "active"
     assert response.json()["items"][0]["artifact_status"] == {"obsidian_vault": "active"}
-    assert response.json()["items"][0]["created_at"] == seeded_data.replace(tzinfo=None).isoformat()
+    from datetime import timezone
+
+    assert response.json()["items"][0]["created_at"] == seeded_data.isoformat().replace("+00:00", "Z")
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_get_active_artifacts_returns_release_payload() -> None:
     transport = ASGITransport(app=app)
 

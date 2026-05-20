@@ -5,28 +5,16 @@ from tempfile import TemporaryDirectory
 
 import networkx as nx
 import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from networkx.readwrite import json_graph
 
-from app.db.base import SessionLocal, engine
+from app.db.database import AsyncSessionLocal
 from app.db.models.artifact_version import ArtifactVersion
 from app.db.models.knowledge_base import KnowledgeBase
 from app.db.models.project import Project
 from app.db.models.release import Release
 from app.main import app
-
-
-@pytest.fixture(autouse=True)
-def create_tables() -> None:
-    Project.__table__.create(bind=engine, checkfirst=True)
-    KnowledgeBase.__table__.create(bind=engine, checkfirst=True)
-    Release.__table__.create(bind=engine, checkfirst=True)
-    ArtifactVersion.__table__.create(bind=engine, checkfirst=True)
-    yield
-    ArtifactVersion.__table__.drop(bind=engine, checkfirst=True)
-    Release.__table__.drop(bind=engine, checkfirst=True)
-    KnowledgeBase.__table__.drop(bind=engine, checkfirst=True)
-    Project.__table__.drop(bind=engine, checkfirst=True)
 
 
 @pytest.fixture
@@ -44,74 +32,90 @@ def graph_file() -> Path:
     tmp.cleanup()
 
 
-@pytest.fixture
-def seeded_now(graph_file: Path) -> datetime:
+@pytest_asyncio.fixture
+async def seeded_now(graph_file: Path) -> datetime:
     now = datetime.now(UTC)
-    with SessionLocal() as session:
-        session.add(Project(id="proj_checkout", name="Checkout", description=None))
-        session.add(Project(id="proj_other", name="Other", description=None))
-        session.add(
-            Release(
-                id="rel_2026_05_19_001",
-                knowledge_base_id="kb_checkout_core",
-                build_job_id="job_2026_05_19_0021",
-                version="v1",
-                status="active",
-                artifact_status={"graph": "ready", "obsidian_vault": "ready"},
-                created_at=now,
-            )
+    async with AsyncSessionLocal() as session:
+        p1 = Project(id="proj_checkout", name="Checkout", description=None)
+        p2 = Project(id="proj_other", name="Other", description=None)
+        session.add_all([p1, p2])
+        await session.flush()
+
+        kb1 = KnowledgeBase(
+            id="kb_checkout_core",
+            project_id="proj_checkout",
+            name="Checkout Core",
+            status="ready",
+            visibility="org_shared",
+            active_release_id=None,  # set after release exists
+            created_at=now, updated_at=now,
         )
-        session.add(
-            ArtifactVersion(
-                id="art_graph_001",
-                release_id="rel_2026_05_19_001",
-                artifact_type="graph",
-                artifact_status="ready",
-                artifact_path=str(graph_file),
-                artifact_meta={},
-            )
+        kb2 = KnowledgeBase(
+            id="kb_no_release",
+            project_id="proj_checkout",
+            name="No Release KB",
+            status="empty",
+            visibility="org_shared",
+            active_release_id=None,
+            created_at=now, updated_at=now,
         )
-        session.add(
-            KnowledgeBase(
-                id="kb_checkout_core",
-                project_id="proj_checkout",
-                name="Checkout Core",
-                status="ready",
-                visibility="org_shared",
-                active_release_id="rel_2026_05_19_001",
-                created_at=now,
-                updated_at=now,
-            )
+        kb3 = KnowledgeBase(
+            id="kb_other_project",
+            project_id="proj_other",
+            name="Other KB",
+            status="ready",
+            visibility="org_shared",
+            active_release_id=None,
+            created_at=now, updated_at=now,
         )
-        session.add(
-            KnowledgeBase(
-                id="kb_no_release",
-                project_id="proj_checkout",
-                name="No Release KB",
-                status="empty",
-                visibility="org_shared",
-                active_release_id=None,
-                created_at=now,
-                updated_at=now,
-            )
+        session.add_all([kb1, kb2, kb3])
+        await session.flush()
+
+        # BuildJob first: release_id nullable
+        from app.db.models.build_job import BuildJob
+        bj = BuildJob(
+            id="job_2026_05_19_0021",
+            knowledge_base_id="kb_checkout_core",
+            build_type="full_build",
+            status="succeeded",
+            release_id=None,
+            created_at=now, started_at=now,
         )
-        session.add(
-            KnowledgeBase(
-                id="kb_other_project",
-                project_id="proj_other",
-                name="Other KB",
-                status="ready",
-                visibility="org_shared",
-                active_release_id=None,
-                created_at=now,
-                updated_at=now,
-            )
+        session.add(bj)
+        await session.flush()
+
+        # Release references existing BuildJob (build_job_id NOT NULL)
+        rel = Release(
+            id="rel_2026_05_19_001",
+            knowledge_base_id="kb_checkout_core",
+            build_job_id="job_2026_05_19_0021",
+            version="v1",
+            status="active",
+            artifact_status={"graph": "ready", "obsidian_vault": "ready"},
+            created_at=now,
         )
-        session.commit()
+        session.add(rel)
+        await session.flush()
+
+        av = ArtifactVersion(
+            id="art_graph_001",
+            release_id="rel_2026_05_19_001",
+            artifact_type="graph",
+            artifact_status="ready",
+            artifact_path=str(graph_file),
+            artifact_meta={},
+        )
+        session.add(av)
+        await session.flush()
+
+        # Resolve circular FKs
+        kb1.active_release_id = rel.id
+        bj.release_id = rel.id
+        await session.commit()
     return now
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_kb_status_returns_real_active_release(seeded_now: datetime) -> None:
     transport = ASGITransport(app=app)
 
@@ -127,7 +131,7 @@ async def test_kb_status_returns_real_active_release(seeded_now: datetime) -> No
     assert data["artifact_status"] == {"graph": "ready", "obsidian_vault": "ready"}
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_kb_status_returns_missing_when_no_active_release(seeded_now: datetime) -> None:
     transport = ASGITransport(app=app)
 
@@ -142,7 +146,7 @@ async def test_kb_status_returns_missing_when_no_active_release(seeded_now: date
     assert data["status"] == "empty"
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_kb_status_returns_missing_for_unknown_kb(seeded_now: datetime) -> None:
     transport = ASGITransport(app=app)
 
@@ -157,7 +161,7 @@ async def test_kb_status_returns_missing_for_unknown_kb(seeded_now: datetime) ->
     assert data["graph_status"] == "missing"
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_kb_list_returns_all_seeded_items(seeded_now: datetime) -> None:
     transport = ASGITransport(app=app)
 
@@ -174,10 +178,10 @@ async def test_kb_list_returns_all_seeded_items(seeded_now: datetime) -> None:
     assert checkout["project_id"] == "proj_checkout"
     assert checkout["status"] == "ready"
     assert checkout["active_release_id"] == "rel_2026_05_19_001"
-    assert checkout["updated_at"] == seeded_now.replace(tzinfo=None).isoformat()
+    assert checkout["updated_at"].replace("+00:00", "Z") == seeded_now.isoformat().replace("+00:00", "Z")
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_kb_list_filters_by_project_id(seeded_now: datetime) -> None:
     transport = ASGITransport(app=app)
 
@@ -190,7 +194,7 @@ async def test_kb_list_filters_by_project_id(seeded_now: datetime) -> None:
     assert data["items"][0]["kb_id"] == "kb_other_project"
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_kb_query_returns_real_answer(seeded_now: datetime) -> None:
     transport = ASGITransport(app=app)
 
@@ -209,7 +213,7 @@ async def test_kb_query_returns_real_answer(seeded_now: datetime) -> None:
     assert "artifact_refs" in data
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_kb_query_returns_error_when_no_active_release(seeded_now: datetime) -> None:
     transport = ASGITransport(app=app)
 

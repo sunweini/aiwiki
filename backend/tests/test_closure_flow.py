@@ -1,17 +1,8 @@
-from datetime import UTC, datetime
+import pytest
 from pathlib import Path
 
-import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.db.base import SessionLocal, engine
-from app.db.models.artifact_version import ArtifactVersion
-from app.db.models.binding import KnowledgeBaseSourceBinding
-from app.db.models.build_job import BuildJob
-from app.db.models.knowledge_base import KnowledgeBase
-from app.db.models.project import Project
-from app.db.models.release import Release
-from app.db.models.source import Source
 from app.main import app
 from app.runner.graphify_runner import GraphifyRunner
 from app.runner.workspace import WorkspaceManager
@@ -69,38 +60,21 @@ def test_source_materializer_creates_source_dirs(tmp_path: Path) -> None:
     assert manager.source_dir("proj_default", "src_orders_service").exists()
 
 
-@pytest.fixture
-def demo_loop_tables() -> None:
-    Project.__table__.create(bind=engine, checkfirst=True)
-    Source.__table__.create(bind=engine, checkfirst=True)
-    KnowledgeBase.__table__.create(bind=engine, checkfirst=True)
-    KnowledgeBaseSourceBinding.__table__.create(bind=engine, checkfirst=True)
-    Release.__table__.create(bind=engine, checkfirst=True)
-    BuildJob.__table__.create(bind=engine, checkfirst=True)
-    ArtifactVersion.__table__.create(bind=engine, checkfirst=True)
-    with SessionLocal() as session:
-        now = datetime.now(UTC)
-        session.add(
-            Project(id="proj_delivery_alpha", name="Delivery Alpha", description=None)
-        )
-        session.commit()
-    yield
-    ArtifactVersion.__table__.drop(bind=engine, checkfirst=True)
-    BuildJob.__table__.drop(bind=engine, checkfirst=True)
-    Release.__table__.drop(bind=engine, checkfirst=True)
-    KnowledgeBaseSourceBinding.__table__.drop(bind=engine, checkfirst=True)
-    KnowledgeBase.__table__.drop(bind=engine, checkfirst=True)
-    Source.__table__.drop(bind=engine, checkfirst=True)
-    Project.__table__.drop(bind=engine, checkfirst=True)
-
-
-@pytest.mark.anyio
-async def test_minimum_demo_loop(demo_loop_tables: None) -> None:
+@pytest.mark.asyncio
+async def test_minimum_demo_loop() -> None:
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        # Create project first via API
+        project_response = await client.post(
+            "/api/projects",
+            json={"name": "Delivery Alpha"},
+        )
+        assert project_response.status_code == 201
+        project_id = project_response.json()["id"]
+
         source_response = await client.post(
-            "/api/projects/proj_delivery_alpha/sources",
+            f"/api/projects/{project_id}/sources",
             json={
                 "name": "checkout-service",
                 "type": "github_repo",
@@ -112,7 +86,7 @@ async def test_minimum_demo_loop(demo_loop_tables: None) -> None:
         source_id = source_response.json()["id"]
 
         kb_response = await client.post(
-            "/api/projects/proj_delivery_alpha/knowledge-bases",
+            f"/api/projects/{project_id}/knowledge-bases",
             json={"name": "Checkout Core", "visibility": "org_shared"},
         )
         assert kb_response.status_code == 201

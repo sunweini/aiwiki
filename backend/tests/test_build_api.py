@@ -1,10 +1,11 @@
-from datetime import UTC, datetime
-from unittest.mock import Mock, patch
-
 import pytest
+import pytest_asyncio
+from datetime import UTC, datetime
+from unittest.mock import patch
+
 from httpx import ASGITransport, AsyncClient
 
-from app.db.base import SessionLocal, engine
+from app.db.database import AsyncSessionLocal
 from app.db.models.binding import KnowledgeBaseSourceBinding as BindingModel
 from app.db.models.build_job import BuildJob as BuildJobModel
 from app.db.models.knowledge_base import KnowledgeBase as KnowledgeBaseModel
@@ -13,24 +14,9 @@ from app.db.models.source import Source as SourceModel
 from app.main import app
 
 
-@pytest.fixture(autouse=True)
-def create_tables() -> None:
-    ProjectModel.__table__.create(bind=engine, checkfirst=True)
-    SourceModel.__table__.create(bind=engine, checkfirst=True)
-    KnowledgeBaseModel.__table__.create(bind=engine, checkfirst=True)
-    BindingModel.__table__.create(bind=engine, checkfirst=True)
-    BuildJobModel.__table__.create(bind=engine, checkfirst=True)
-    yield
-    BuildJobModel.__table__.drop(bind=engine, checkfirst=True)
-    BindingModel.__table__.drop(bind=engine, checkfirst=True)
-    KnowledgeBaseModel.__table__.drop(bind=engine, checkfirst=True)
-    SourceModel.__table__.drop(bind=engine, checkfirst=True)
-    ProjectModel.__table__.drop(bind=engine, checkfirst=True)
-
-
-@pytest.fixture
-def seeded_data() -> None:
-    with SessionLocal() as session:
+@pytest_asyncio.fixture
+async def seeded_data() -> None:
+    async with AsyncSessionLocal() as session:
         now = datetime.now(UTC)
         project = ProjectModel(id="proj_delivery_alpha", name="Delivery Alpha", description=None)
         source = SourceModel(
@@ -72,12 +58,14 @@ def seeded_data() -> None:
         )
         session.add(project)
         session.add(source)
+        await session.flush()
         session.add(knowledge_base)
+        await session.flush()
         session.add(binding)
-        session.commit()
+        await session.commit()
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_create_build_job_returns_persisted_job_payload(seeded_data: None) -> None:
     transport = ASGITransport(app=app)
 
@@ -99,8 +87,8 @@ async def test_create_build_job_returns_persisted_job_payload(seeded_data: None)
     assert data["knowledge_base_id"] == "kb_checkout_core"
     assert data["job_id"].startswith("job_")
 
-    with SessionLocal() as session:
-        job = session.get(BuildJobModel, data["job_id"])
+    async with AsyncSessionLocal() as session:
+        job = await session.get(BuildJobModel, data["job_id"])
         assert job is not None
         assert job.knowledge_base_id == "kb_checkout_core"
         assert job.build_type == "incremental_update"
@@ -111,7 +99,7 @@ async def test_create_build_job_returns_persisted_job_payload(seeded_data: None)
     enqueue_build.assert_called_once()
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_create_build_job_status_is_pending_and_enqueues_runner(seeded_data: None) -> None:
     transport = ASGITransport(app=app)
 

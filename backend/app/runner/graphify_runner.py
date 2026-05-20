@@ -605,7 +605,13 @@ class GraphifyRunner:
                 skipped.append(f.name)
 
         if skipped:
-            logger.debug("Skipped %d file(s) with unsupported extensions: %s", len(skipped), skipped[:10])
+            logger.info("Skipped %d file(s) with unsupported extensions: %s", len(skipped), skipped[:10])
+
+        logger.info("Phase 1 (AST): %d code files", len(code_files))
+        if semantic_files:
+            logger.info("Phase 2 (LLM): %d semantic files: %s",
+                        len(semantic_files),
+                        [f.name for f in semantic_files[:20]])
 
         # Phase 1: AST extraction on code files (local, no API calls)
         ast_result: dict = {"nodes": [], "edges": []}

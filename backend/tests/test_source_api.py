@@ -1,34 +1,24 @@
 import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
-from app.db.base import SessionLocal, engine
-from app.db.models import Project
+from app.db.database import AsyncSessionLocal
 from app.db.models.project import Project as ProjectModel
-from app.db.models.source import Source as SourceModel
 from app.main import app
 
 
-@pytest.fixture(autouse=True)
-def create_tables() -> None:
-    ProjectModel.__table__.create(bind=engine, checkfirst=True)
-    SourceModel.__table__.create(bind=engine, checkfirst=True)
-    yield
-    SourceModel.__table__.drop(bind=engine, checkfirst=True)
-    ProjectModel.__table__.drop(bind=engine, checkfirst=True)
-
-
-@pytest.fixture
-def project() -> Project:
-    with SessionLocal() as session:
-        project = Project(id="proj_delivery_alpha", name="Delivery Alpha", description=None)
+@pytest_asyncio.fixture
+async def project() -> ProjectModel:
+    async with AsyncSessionLocal() as session:
+        project = ProjectModel(id="proj_delivery_alpha", name="Delivery Alpha", description=None)
         session.add(project)
-        session.commit()
-        session.refresh(project)
+        await session.commit()
+        await session.refresh(project)
         return project
 
 
-@pytest.mark.anyio
-async def test_create_source_returns_source_payload(project: Project) -> None:
+@pytest.mark.asyncio
+async def test_create_source_returns_source_payload(project: ProjectModel) -> None:
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
@@ -52,8 +42,8 @@ async def test_create_source_returns_source_payload(project: Project) -> None:
     assert response.json()["project_id"] == "proj_delivery_alpha"
 
 
-@pytest.mark.anyio
-async def test_list_sources_returns_page_payload(project: Project) -> None:
+@pytest.mark.asyncio
+async def test_list_sources_returns_page_payload(project: ProjectModel) -> None:
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:

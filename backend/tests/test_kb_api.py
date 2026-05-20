@@ -1,38 +1,24 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.db.base import SessionLocal, engine
-from app.db.models.project import Project as ProjectModel
-from app.db.models.knowledge_base import KnowledgeBase as KnowledgeBaseModel
 from app.main import app
 
 
-@pytest.fixture(autouse=True)
-def create_tables() -> None:
-    ProjectModel.__table__.create(bind=engine, checkfirst=True)
-    KnowledgeBaseModel.__table__.create(bind=engine, checkfirst=True)
-    yield
-    KnowledgeBaseModel.__table__.drop(bind=engine, checkfirst=True)
-    ProjectModel.__table__.drop(bind=engine, checkfirst=True)
-
-
-@pytest.fixture
-def project() -> ProjectModel:
-    with SessionLocal() as session:
-        project = ProjectModel(id="proj_delivery_alpha", name="Delivery Alpha", description=None)
-        session.add(project)
-        session.commit()
-        session.refresh(project)
-        return project
-
-
-@pytest.mark.anyio
-async def test_create_knowledge_base_returns_payload(project: ProjectModel) -> None:
+@pytest.mark.asyncio
+async def test_create_knowledge_base_returns_payload() -> None:
     transport = ASGITransport(app=app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        # Create project first via API
+        project_response = await client.post(
+            "/api/projects",
+            json={"name": "Delivery Alpha"},
+        )
+        assert project_response.status_code == 201
+        project_id = project_response.json()["id"]
+
         response = await client.post(
-            "/api/projects/proj_delivery_alpha/knowledge-bases",
+            f"/api/projects/{project_id}/knowledge-bases",
             json={
                 "name": "Checkout Core Knowledge Base",
                 "visibility": "org_shared",
@@ -43,4 +29,4 @@ async def test_create_knowledge_base_returns_payload(project: ProjectModel) -> N
 
     assert response.status_code == 201
     assert response.json()["name"] == "Checkout Core Knowledge Base"
-    assert response.json()["project_id"] == "proj_delivery_alpha"
+    assert response.json()["project_id"] == project_id

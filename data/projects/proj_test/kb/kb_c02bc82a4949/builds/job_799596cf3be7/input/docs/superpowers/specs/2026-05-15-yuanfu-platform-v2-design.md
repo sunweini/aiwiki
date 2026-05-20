@@ -1,1 +1,0 @@
-/Users/sunweini/同步空间/工作内容/pangu/aiwiki/data/projects/proj_test/sources/src_51870142e55e/docs/superpowers/specs/2026-05-15-yuanfu-platform-v2-design.md

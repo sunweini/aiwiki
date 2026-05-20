@@ -1,8 +1,9 @@
 import pytest
+import pytest_asyncio
 from datetime import UTC, datetime
 from httpx import ASGITransport, AsyncClient
 
-from app.db.base import SessionLocal, engine
+from app.db.database import AsyncSessionLocal
 from app.db.models.binding import KnowledgeBaseSourceBinding as BindingModel
 from app.db.models.knowledge_base import KnowledgeBase as KnowledgeBaseModel
 from app.db.models.project import Project as ProjectModel
@@ -10,22 +11,9 @@ from app.db.models.source import Source as SourceModel
 from app.main import app
 
 
-@pytest.fixture(autouse=True)
-def create_tables() -> None:
-    ProjectModel.__table__.create(bind=engine, checkfirst=True)
-    SourceModel.__table__.create(bind=engine, checkfirst=True)
-    KnowledgeBaseModel.__table__.create(bind=engine, checkfirst=True)
-    BindingModel.__table__.create(bind=engine, checkfirst=True)
-    yield
-    BindingModel.__table__.drop(bind=engine, checkfirst=True)
-    KnowledgeBaseModel.__table__.drop(bind=engine, checkfirst=True)
-    SourceModel.__table__.drop(bind=engine, checkfirst=True)
-    ProjectModel.__table__.drop(bind=engine, checkfirst=True)
-
-
-@pytest.fixture
-def seeded_data() -> None:
-    with SessionLocal() as session:
+@pytest_asyncio.fixture
+async def seeded_data() -> None:
+    async with AsyncSessionLocal() as session:
         now = datetime.now(UTC)
         project = ProjectModel(id="proj_delivery_alpha", name="Delivery Alpha", description=None)
         source = SourceModel(
@@ -57,11 +45,12 @@ def seeded_data() -> None:
         )
         session.add(project)
         session.add(source)
+        await session.flush()
         session.add(knowledge_base)
-        session.commit()
+        await session.commit()
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_create_binding_returns_payload(seeded_data: None) -> None:
     transport = ASGITransport(app=app)
 
