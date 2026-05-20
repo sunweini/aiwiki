@@ -36,7 +36,35 @@ class KnowledgeBaseService:
         )
         knowledge_base.created_at = now
         knowledge_base.updated_at = now
-        return self.knowledge_base_repository.create(knowledge_base)
+        knowledge_base = self.knowledge_base_repository.create(knowledge_base)
+
+        from pathlib import Path
+        from app.config import settings
+        from app.runner.workspace import WorkspaceManager
+
+        wm = WorkspaceManager(Path(settings.data_root))
+        wm.ensure_project_dir(project_id)
+        kb_root = wm.ensure_kb_dir(project_id, knowledge_base.id)
+
+        for name in ["obsidian", "wiki"]:
+            repo_dir = kb_root / name
+            if not (repo_dir / ".git").exists():
+                import subprocess
+                subprocess.run(
+                    ["git", "init", str(repo_dir)],
+                    capture_output=True, timeout=10,
+                )
+                (repo_dir / ".gitkeep").touch()
+                subprocess.run(
+                    ["git", "-C", str(repo_dir), "add", "-A"],
+                    capture_output=True, timeout=10,
+                )
+                subprocess.run(
+                    ["git", "-C", str(repo_dir), "commit", "-m", "initial"],
+                    capture_output=True, timeout=10,
+                )
+
+        return knowledge_base
 
     def get_knowledge_base(self, kb_id: str) -> KnowledgeBase:
         return self.knowledge_base_repository.get(kb_id)
