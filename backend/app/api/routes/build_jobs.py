@@ -2,11 +2,11 @@ import asyncio
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.db.base import SessionLocal
+from app.db.database import AsyncSessionLocal, get_async_session
 from app.repositories.build_jobs import BuildJobRepository
 from app.runner.graphify_runner import GraphifyRunner
 from app.runner.workspace import WorkspaceManager
@@ -15,15 +15,6 @@ from app.schemas.common import PageResponse
 from app.services.build_service import BuildService
 
 router = APIRouter(prefix="/api")
-
-
-def get_session() -> Session:
-    session = SessionLocal()
-    try:
-        yield session
-    finally:
-        session.close()
-
 
 logger = logging.getLogger(__name__)
 
@@ -45,13 +36,13 @@ def _make_runner() -> GraphifyRunner:
 async def create_build_job(
     kb_id: str,
     payload: BuildJobCreate,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
 ) -> BuildJobRead:
     runner = _make_runner()
-    service = BuildService(session_factory=SessionLocal, runner=runner)
+    service = BuildService(session_factory=AsyncSessionLocal, runner=runner)
 
-    job, sources, project_id = service.create_build_job(kb_id, payload)
-    llm_config = service._read_llm_config(kb_id)
+    job, sources, project_id = await service.create_build_job(kb_id, payload)
+    llm_config = await service._read_llm_config(kb_id)
 
     task = asyncio.create_task(service.enqueue_build(
         job.id, kb_id, sources, llm_config=llm_config, project_id=project_id
@@ -75,14 +66,14 @@ async def create_build_job(
 
 
 @router.get("/knowledge-bases/{kb_id}/builds", response_model=PageResponse[BuildJobRead])
-def list_build_jobs(
+async def list_build_jobs(
     kb_id: str,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
 ) -> PageResponse[BuildJobRead]:
     repo = BuildJobRepository(session)
-    items, total = repo.list_by_kb_paginated(kb_id=kb_id, page=page, page_size=page_size)
+    items, total = await repo.list_by_kb_paginated(kb_id=kb_id, page=page, page_size=page_size)
     return PageResponse[BuildJobRead](
         items=[
             BuildJobRead(
@@ -107,14 +98,13 @@ def list_build_jobs(
 
 
 @router.get("/build-jobs/{job_id}", response_model=BuildJobRead)
-def get_build_job(
+async def get_build_job(
     job_id: str,
-    session: Session = Depends(get_session),
+    session: AsyncSession = Depends(get_async_session),
 ) -> BuildJobRead:
     repo = BuildJobRepository(session)
-    job = repo.get(job_id)
+    job = await repo.get(job_id)
     if job is None:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Build job not found")
     return BuildJobRead(
         job_id=job.id,

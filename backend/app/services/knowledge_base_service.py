@@ -5,10 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.binding import KnowledgeBaseSourceBinding
 from app.db.models.knowledge_base import KnowledgeBase
+from app.db.models.project import Project
 from app.repositories.bindings import BindingRepository
 from app.repositories.knowledge_bases import KnowledgeBaseRepository
+from app.repositories.projects import ProjectRepository
 from app.schemas.binding import BindingCreate
 from app.schemas.knowledge_base import KnowledgeBaseCreate
+from app.schemas.project import ProjectCreate
 
 
 class KnowledgeBaseService:
@@ -101,3 +104,36 @@ class KnowledgeBaseService:
             priority=payload.priority,
         )
         return await self.binding_repository.create(binding)
+
+
+class ProjectService:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+        self.repo = ProjectRepository(session)
+
+    async def create_project(self, payload: ProjectCreate) -> Project:
+        project = Project(
+            id=f"proj_{uuid4().hex[:12]}",
+            name=payload.name,
+            description=payload.description,
+        )
+        return await self.repo.create(project)
+
+    async def list_projects(self, page: int = 1, page_size: int = 20) -> tuple[list[Project], int]:
+        return await self.repo.list_all(page=page, page_size=page_size)
+
+    async def get_project(self, project_id: str) -> Project | None:
+        return await self.repo.get(project_id)
+
+    async def update_project(self, project_id: str, name: str) -> Project:
+        project = await self.repo.get(project_id)
+        if project is None:
+            raise ValueError("project not found")
+        project.name = name
+        return await self.repo.update(project)
+
+    async def delete_project(self, project_id: str) -> None:
+        project = await self.repo.get(project_id)
+        if project is None:
+            raise ValueError("project not found")
+        await self.repo.delete(project)
