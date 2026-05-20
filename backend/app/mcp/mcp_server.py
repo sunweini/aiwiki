@@ -9,6 +9,7 @@ Transport modes:
 - sse: For remote Claude Code instances over HTTP
 """
 
+import asyncio
 import sys
 from pathlib import Path
 
@@ -17,16 +18,18 @@ BACKEND_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-from app.db.base import SessionLocal
+from app.db.database import AsyncSessionLocal
 from app.services.mcp_gateway_service import MCPGatewayService
 
 
-def _session():
-    s = SessionLocal()
-    try:
+async def _session():
+    async with AsyncSessionLocal() as s:
         yield s
-    finally:
-        s.close()
+
+
+def _run_async(coro):
+    """Bridge async to sync for fastmcp tools."""
+    return asyncio.run(coro)
 
 
 # ------------------------------------------------------------------
@@ -45,8 +48,10 @@ def kb_status(kb_id: str) -> dict:
     Args:
         kb_id: Knowledge base ID (e.g. "kb_aac292691c03").
     """
-    with next(_session()) as session:
-        return MCPGatewayService(session).kb_status(kb_id)
+    async def _impl():
+        async for session in _session():
+            return await MCPGatewayService(session).kb_status(kb_id)
+    return _run_async(_impl())
 
 
 @mcp.tool()
@@ -56,8 +61,10 @@ def kb_list(project_id: str | None = None) -> dict:
     Args:
         project_id: Filter by project ID (optional).
     """
-    with next(_session()) as session:
-        return MCPGatewayService(session).kb_list(project_id)
+    async def _impl():
+        async for session in _session():
+            return await MCPGatewayService(session).kb_list(project_id)
+    return _run_async(_impl())
 
 
 @mcp.tool()
@@ -72,8 +79,10 @@ def kb_query(kb_id: str, question: str, mode: str = "bfs", budget: int = 2000) -
         mode: Traversal mode "bfs" or "dfs" (default "bfs").
         budget: Token budget for response (default 2000).
     """
-    with next(_session()) as session:
-        return MCPGatewayService(session).kb_query(kb_id, question, mode=mode, budget=budget)
+    async def _impl():
+        async for session in _session():
+            return await MCPGatewayService(session).kb_query(kb_id, question, mode=mode, budget=budget)
+    return _run_async(_impl())
 
 
 @mcp.tool()
@@ -87,8 +96,10 @@ def kb_path(kb_id: str, source_label: str, target_label: str) -> dict:
         source_label: Source node label (substring match).
         target_label: Target node label (substring match).
     """
-    with next(_session()) as session:
-        return MCPGatewayService(session).kb_path(kb_id, source_label, target_label)
+    async def _impl():
+        async for session in _session():
+            return await MCPGatewayService(session).kb_path(kb_id, source_label, target_label)
+    return _run_async(_impl())
 
 
 @mcp.tool()
@@ -100,13 +111,14 @@ def kb_explain(kb_id: str, node_label: str, budget: int = 2000) -> dict:
         node_label: Node label to explain (substring match).
         budget: Token budget for response (default 2000).
     """
-    with next(_session()) as session:
-        return MCPGatewayService(session).kb_explain(kb_id, node_label, budget=budget)
+    async def _impl():
+        async for session in _session():
+            return await MCPGatewayService(session).kb_explain(kb_id, node_label, budget=budget)
+    return _run_async(_impl())
 
 
 if __name__ == "__main__":
     import argparse
-    import asyncio
 
     parser = argparse.ArgumentParser(description="AI Code Knowledge Archive MCP Server")
     parser.add_argument(
