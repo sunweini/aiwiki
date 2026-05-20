@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Query, status
@@ -24,45 +25,39 @@ def get_session() -> Session:
 
 
 def _make_runner() -> GraphifyRunner:
-    workspace_root = Path(settings.workspace_root)
-    workspace_root.mkdir(parents=True, exist_ok=True)
-    return GraphifyRunner(WorkspaceManager(data_root=workspace_root))
+    data_root = Path(settings.data_root)
+    data_root.mkdir(parents=True, exist_ok=True)
+    return GraphifyRunner(WorkspaceManager(data_root))
 
 
-@router.post("/knowledge-bases/{kb_id}/builds", response_model=BuildJobRead, status_code=status.HTTP_201_CREATED)
-def create_build_job(
+@router.post("/knowledge-bases/{kb_id}/builds", response_model=BuildJobRead, status_code=status.HTTP_202_ACCEPTED)
+async def create_build_job(
     kb_id: str,
     payload: BuildJobCreate,
     session: Session = Depends(get_session),
 ) -> BuildJobRead:
-    service = BuildService(session=session, runner=_make_runner())
-    job, sources = service.create_build_job(kb_id, payload)
-    service.enqueue_build(
-        {
-            "job_id": job.id,
-            "knowledge_base_id": job.knowledge_base_id,
-            "sources": sources,
-        }
-    )
-    # Re-fetch to capture persisted status/release_id/finished_at from runner
-    repo = BuildJobRepository(session)
-    updated_job = repo.get(job.id)
-    if updated_job is None:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=500, detail="Build job lost after creation")
+    runner = _make_runner()
+    service = BuildService(session_factory=SessionLocal, runner=runner)
+
+    job, sources, project_id = service.create_build_job(kb_id, payload)
+    llm_config = service._read_llm_config(kb_id)
+
+    asyncio.create_task(service.enqueue_build(
+        job.id, kb_id, sources, llm_config=llm_config, project_id=project_id
+    ))
 
     return BuildJobRead(
-        job_id=updated_job.id,
-        knowledge_base_id=updated_job.knowledge_base_id,
-        build_type=updated_job.build_type,
+        job_id=job.id,
+        knowledge_base_id=job.knowledge_base_id,
+        build_type=job.build_type,
         triggered_by=payload.triggered_by,
         reason=payload.reason,
-        status=updated_job.status,
-        release_id=updated_job.release_id,
-        started_at=updated_job.started_at.isoformat(),
-        finished_at=updated_job.finished_at.isoformat() if updated_job.finished_at else None,
-        error_summary=updated_job.error_summary,
-        stages=updated_job.stages,
+        status=job.status,
+        release_id=None,
+        started_at=job.started_at.isoformat(),
+        finished_at=None,
+        error_summary=None,
+        stages=job.stages,
     )
 
 
