@@ -135,6 +135,7 @@ class BuildService:
                     created_at=created_at,
                 )
                 session.add(release)
+                await session.flush()
                 job.release_id = release.id
 
                 for a in result.get("artifacts", []):
