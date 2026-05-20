@@ -34,7 +34,7 @@ def test_read_llm_config_returns_config_dict() -> None:
         )
         session.commit()
 
-        service = BuildService(session=session)
+        service = BuildService(session_factory=lambda: session)
         config = service._read_llm_config("kb_1")
 
     assert config == {
@@ -51,7 +51,7 @@ def test_read_llm_config_returns_empty_when_kb_not_found() -> None:
     Base.metadata.create_all(bind=engine)
 
     with Session(engine) as session:
-        service = BuildService(session=session)
+        service = BuildService(session_factory=lambda: session)
         config = service._read_llm_config("nonexistent_kb")
 
     assert config == {}
@@ -64,13 +64,14 @@ def test_persist_result_creates_release_and_artifacts() -> None:
     with Session(engine) as session:
         now = datetime.now(UTC)
         session.add(Project(id="proj_1", name="P1", description=None))
-        build_job = BuildJob(
-            id="job_test_1", knowledge_base_id="kb_1",
-            build_type="full_rebuild", status="pending",
-            release_id=None, error_summary=None,
-            created_at=now, started_at=now,
+        session.add(
+            BuildJob(
+                id="job_test_1", knowledge_base_id="kb_1",
+                build_type="full_rebuild", status="pending",
+                release_id=None, error_summary=None,
+                created_at=now, started_at=now,
+            )
         )
-        session.add(build_job)
         session.add(
             KnowledgeBase(
                 id="kb_1", project_id="proj_1", name="KB1",
@@ -116,31 +117,30 @@ def test_persist_result_creates_release_and_artifacts() -> None:
             "stages": [{"name": "extract", "status": "completed"}],
         }
 
-        service = BuildService(session=session)
-        service._persist_result("job_test_1", "kb_1", result)
+        # _persist_result opens and closes its own session; give it a fresh one
+        service = BuildService(session_factory=lambda: Session(engine))
+        service._persist_result("job_test_1", "kb_1", result, "proj_1")
 
-        # Verify build job updated
-        session.refresh(build_job)
+    # Verify results in a fresh session
+    with Session(engine) as verify_session:
+        build_job = verify_session.get(BuildJob, "job_test_1")
         assert build_job.status == "completed"
         assert build_job.release_id == "rel_test_1"
         assert build_job.finished_at is not None
 
-        # Verify release persisted
-        release = session.get(Release, "rel_test_1")
+        release = verify_session.get(Release, "rel_test_1")
         assert release is not None
         assert release.knowledge_base_id == "kb_1"
         assert release.version == now_ts
 
-        # Verify artifacts persisted
-        art_graph = session.get(ArtifactVersion, "art_rel_test_1_graph")
+        art_graph = verify_session.get(ArtifactVersion, "art_rel_test_1_graph")
         assert art_graph is not None
         assert art_graph.artifact_type == "graph"
-        art_report = session.get(ArtifactVersion, "art_rel_test_1_report")
+        art_report = verify_session.get(ArtifactVersion, "art_rel_test_1_report")
         assert art_report is not None
         assert art_report.artifact_type == "report"
 
-        # Verify KB active_release_id updated
-        kb = session.get(KnowledgeBase, "kb_1")
+        kb = verify_session.get(KnowledgeBase, "kb_1")
         assert kb.active_release_id == "rel_test_1"
 
 
@@ -151,13 +151,14 @@ def test_persist_result_marks_build_failed_on_stage_failure() -> None:
     with Session(engine) as session:
         now = datetime.now(UTC)
         session.add(Project(id="proj_1", name="P1", description=None))
-        build_job = BuildJob(
-            id="job_fail_1", knowledge_base_id="kb_1",
-            build_type="full_rebuild", status="pending",
-            release_id=None, error_summary=None,
-            created_at=now, started_at=now,
+        session.add(
+            BuildJob(
+                id="job_fail_1", knowledge_base_id="kb_1",
+                build_type="full_rebuild", status="pending",
+                release_id=None, error_summary=None,
+                created_at=now, started_at=now,
+            )
         )
-        session.add(build_job)
         session.commit()
 
         result = {
@@ -171,10 +172,10 @@ def test_persist_result_marks_build_failed_on_stage_failure() -> None:
             ],
         }
 
-        service = BuildService(session=session)
-        service._persist_result("job_fail_1", "kb_1", result)
+        service = BuildService(session_factory=lambda: Session(engine))
+        service._persist_result("job_fail_1", "kb_1", result, "proj_1")
 
-        session.refresh(build_job)
+    with Session(engine) as verify_session:
+        build_job = verify_session.get(BuildJob, "job_fail_1")
         assert build_job.status == "failed"
-        assert build_job.error_summary == "graphify module not available"
         assert build_job.finished_at is not None

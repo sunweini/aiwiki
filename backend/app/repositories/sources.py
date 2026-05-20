@@ -26,6 +26,12 @@ class SourceRepository:
         total = self.session.query(Source).filter(Source.project_id == project_id).count()
         return items, total
 
+    def update(self, source: Source) -> Source:
+        self.session.add(source)
+        self.session.commit()
+        self.session.refresh(source)
+        return source
+
     def list_all_polling(self) -> list:
         """List all sources with git polling enabled."""
         from app.db.models.source import Source

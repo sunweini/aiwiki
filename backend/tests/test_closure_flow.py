@@ -39,9 +39,8 @@ def test_graphify_runner_returns_stage_log(tmp_path: Path) -> None:
     )
 
     stage_names = [s["name"] for s in result["stages"]]
-    # Pipeline runs until it hits a blocking failure (extract/build/validate)
-    # since no real source files exist in the test workspace.
-    assert stage_names[:6] == [
+    assert stage_names[:7] == [
+        "validate_boundary",
         "resolve_job_context",
         "materialize_sources",
         "normalize_inputs",
@@ -49,10 +48,6 @@ def test_graphify_runner_returns_stage_log(tmp_path: Path) -> None:
         "build",
         "validate",
     ]
-    # validate is now non-blocking — pipeline continues past it
-    validate_stage = result["stages"][5]
-    assert validate_stage["name"] == "validate"
-    assert validate_stage["status"] in ("completed", "degraded", "failed")
     assert "release" in result
     assert "stats" in result
 
@@ -70,9 +65,8 @@ def test_source_materializer_creates_source_dirs(tmp_path: Path) -> None:
         ],
     )
 
-    workspace = tmp_path / "job_2026_05_19_0021" / "source-materials"
-    assert (workspace / "src_checkout_repo").exists()
-    assert (workspace / "src_orders_service").exists()
+    assert manager.source_dir("proj_default", "src_checkout_repo").exists()
+    assert manager.source_dir("proj_default", "src_orders_service").exists()
 
 
 @pytest.fixture
@@ -138,7 +132,7 @@ async def test_minimum_demo_loop(demo_loop_tables: None) -> None:
                 "reason": "demo loop",
             },
         )
-        assert build_response.status_code == 201
+        assert build_response.status_code == 202
         assert build_response.json()["job_id"].startswith("job_")
 
         releases_response = await client.get(

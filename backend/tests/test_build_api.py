@@ -82,6 +82,7 @@ async def test_create_build_job_returns_persisted_job_payload(seeded_data: None)
     transport = ASGITransport(app=app)
 
     with patch("app.api.routes.build_jobs.BuildService.enqueue_build") as enqueue_build:
+        enqueue_build.return_value = None
         async with AsyncClient(transport=transport, base_url="http://testserver") as client:
             response = await client.post(
                 "/api/knowledge-bases/kb_checkout_core/builds",
@@ -92,7 +93,7 @@ async def test_create_build_job_returns_persisted_job_payload(seeded_data: None)
                 },
             )
 
-    assert response.status_code == 201
+    assert response.status_code == 202
     data = response.json()
     assert data["build_type"] == "incremental_update"
     assert data["knowledge_base_id"] == "kb_checkout_core"
@@ -115,26 +116,25 @@ async def test_create_build_job_status_is_pending_and_enqueues_runner(seeded_dat
     transport = ASGITransport(app=app)
 
     with patch("app.api.routes.build_jobs.BuildService.enqueue_build") as enqueue_build:
+        enqueue_build.return_value = None
         async with AsyncClient(transport=transport, base_url="http://testserver") as client:
             response = await client.post(
                 "/api/knowledge-bases/kb_checkout_core/builds",
                 json={"build_type": "full_build", "triggered_by": "system"},
             )
 
-    assert response.status_code == 201
+    assert response.status_code == 202
     data = response.json()
     assert data["status"] == "pending"
-    enqueue_build.assert_called_once_with(
+    enqueue_build.assert_called_once()
+    call_args = enqueue_build.call_args
+    assert call_args[0][0] == data["job_id"]
+    assert call_args[0][1] == "kb_checkout_core"
+    assert call_args[0][2] == [
         {
-            "job_id": data["job_id"],
-            "knowledge_base_id": "kb_checkout_core",
-            "sources": [
-                {
-                    "id": "src_checkout_repo",
-                    "name": "checkout-service",
-                    "type": "github_repo",
-                    "source_ref": "acme/checkout-service",
-                }
-            ],
+            "id": "src_checkout_repo",
+            "name": "checkout-service",
+            "type": "github_repo",
+            "source_ref": "acme/checkout-service",
         }
-    )
+    ]

@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from unittest.mock import Mock
+from unittest.mock import ANY, Mock
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -16,30 +16,35 @@ from app.services.build_service import BuildService
 
 
 def test_enqueue_build_calls_runner_once() -> None:
-    runner = Mock()
-    runner.run.return_value = {
-        "job_id": "job_1",
-        "kb_id": "kb_1",
-        "stages": [],
-        "sources": [{"id": "src_1"}],
-    }
-    service = BuildService(runner=runner)
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(bind=engine)
 
-    job = {
-        "job_id": "job_1",
-        "knowledge_base_id": "kb_1",
-        "sources": [{"id": "src_1"}],
-    }
+    with Session(engine) as session:
+        runner = Mock()
+        runner.run.return_value = {
+            "job_id": "job_1",
+            "kb_id": "kb_1",
+            "stages": [],
+            "sources": [{"id": "src_1"}],
+            "graph_ready": True,
+            "release": None,
+            "artifacts": [],
+            "stats": {},
+        }
+        service = BuildService(session_factory=lambda: session, runner=runner)
 
-    result = service.enqueue_build(job)
+        service._sync_run_and_persist(
+            "job_1", "kb_1", [{"id": "src_1"}], {}, "proj_default"
+        )
 
-    runner.run.assert_called_once_with(
-        job_id="job_1",
-        kb_id="kb_1",
-        sources=[{"id": "src_1"}],
-        llm_config={},
-    )
-    assert result == runner.run.return_value
+        runner.run.assert_called_once_with(
+            job_id="job_1",
+            kb_id="kb_1",
+            sources=[{"id": "src_1"}],
+            llm_config={},
+            progress_callback=ANY,
+            project_id="proj_default",
+        )
 
 
 def test_create_build_job_persists_and_returns_sources() -> None:
@@ -94,12 +99,14 @@ def test_create_build_job_persists_and_returns_sources() -> None:
         )
         session.commit()
 
-        service = BuildService(session=session)
+        service = BuildService(session_factory=lambda: session)
         payload = BuildJobCreate(build_type="full_build", triggered_by="system", reason=None)
 
-        job, sources = service.create_build_job("kb_1", payload)
+        job, sources, project_id = service.create_build_job("kb_1", payload)
 
-        persisted = session.get(BuildJobModel, job.id)
+        # Verify the session was closed by create_build_job; re-open
+        session2 = Session(engine)
+        persisted = session2.get(BuildJobModel, job.id)
         assert persisted is not None
         assert persisted.knowledge_base_id == "kb_1"
         assert persisted.build_type == "full_build"
@@ -114,4 +121,6 @@ def test_create_build_job_persists_and_returns_sources() -> None:
                 "source_ref": "acme/checkout-service",
             }
         ]
-        assert BuildJobRepository(session).list_by_kb("kb_1")[0].id == job.id
+        assert BuildJobRepository(session2).list_by_kb("kb_1")[0].id == job.id
+        assert project_id == "proj_1"
+        session2.close()
