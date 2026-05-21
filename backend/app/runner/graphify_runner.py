@@ -755,10 +755,17 @@ class GraphifyRunner:
             ")\n"
             "json.dump(result, sys.stdout)\n"
         )
+        # Write script to a temp file — -c multiline scripts have
+        # indentation / escaping pitfalls in subprocess contexts.
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", prefix="graphify_sem_", delete=False,
+        ) as sf:
+            sf.write(script)
+            script_path = sf.name
 
         try:
             proc = subprocess.run(
-                [sys.executable, "-c", script, payload_path],
+                [sys.executable, script_path, payload_path],
                 capture_output=True, text=True, timeout=600,
             )
         finally:
