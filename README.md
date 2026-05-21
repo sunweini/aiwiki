@@ -30,9 +30,10 @@
 |------|------|
 | Python | 3.12+ |
 | Node.js | 18+ |
+| PostgreSQL | 16+ |
 | graphify | 已安装 |
 
-默认使用 SQLite（零配置），可选 PostgreSQL。
+使用 PostgreSQL，配置见 `app/config.py`。
 
 ### 1. 启动后端
 
@@ -267,7 +268,7 @@ cfg['mcpServers']['aiwiki'] = {
     'command': 'python3',
     'args': ['/path/to/aiwiki/backend/app/mcp/mcp_server.py'],
     'env': {
-        'AIKB_DATABASE_URL': 'sqlite+pysqlite:////path/to/aiwiki/backend/data/aiwiki.db'
+        'AIKB_DATABASE_URL': 'postgresql+asyncpg://user@localhost:5432/aiwiki'
     }
 }
 with open('$HOME/.claude.json', 'w') as f:
