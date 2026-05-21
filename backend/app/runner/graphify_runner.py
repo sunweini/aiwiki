@@ -640,18 +640,31 @@ class GraphifyRunner:
                     api_key=api_key_value,
                     model=llm_config.get("llm_model_override"),
                     token_budget=llm_config.get("llm_extraction_budget") or 60000,
-                    max_concurrency=4,
+                    max_concurrency=2,
                 )
-                logger.info(
-                    "Semantic extraction: %d nodes, %d edges (%d files)",
-                    len(semantic.get("nodes", [])),
-                    len(semantic.get("edges", [])),
-                    len(semantic_files),
-                )
+                node_count = len(semantic.get("nodes", []))
+                edge_count = len(semantic.get("edges", []))
+                if node_count == 0 and edge_count == 0:
+                    logger.warning(
+                        "Semantic extraction returned 0 nodes — API may have rate-limited "
+                        "or all chunks failed. Graph will contain only AST nodes."
+                    )
+                else:
+                    logger.info(
+                        "Semantic extraction: %d nodes, %d edges (%d files)",
+                        node_count, edge_count, len(semantic_files),
+                    )
                 ast_result.setdefault("nodes", []).extend(semantic.get("nodes", []))
                 ast_result.setdefault("edges", []).extend(semantic.get("edges", []))
             except Exception:
                 logger.exception("Semantic extraction failed, using AST-only result")
+        elif semantic_files and not api_key_value:
+            logger.warning(
+                "Semantic extraction skipped: %d semantic files found but no API key resolved. "
+                "Check llm_api_key_ref (%s) and environment/config.",
+                len(semantic_files),
+                llm_config.get("llm_api_key_ref", "not set"),
+            )
 
         return ast_result
 
