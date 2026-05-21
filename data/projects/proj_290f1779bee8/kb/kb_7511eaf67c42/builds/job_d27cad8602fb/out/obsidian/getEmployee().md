@@ -1,0 +1,17 @@
+---
+source_file: "mini-merchant/utils/utils/auth.js"
+type: "code"
+community: "mini_merchant_pages_finance_finance_js"
+location: "L27"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/mini_merchant_pages_finance_finance_js
+---
+
+# getEmployee()
+
+## Connections
+- [[auth.js]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/mini_merchant_pages_finance_finance_js

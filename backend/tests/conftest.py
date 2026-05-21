@@ -1,7 +1,9 @@
 import os
 
-# Override stale env vars before any app import touches Settings()
-os.environ.pop("AIKB_DATABASE_URL", None)
+# Route tests to a SEPARATE database so production data is never touched.
+# The test DB is created/destroyed inside the _test_engine fixture.
+_test_db_url = "postgresql+asyncpg://sunweini@localhost:5432/aiwiki_test"
+os.environ["AIKB_DATABASE_URL"] = _test_db_url
 os.environ["AIKB_DB_POOL_PRE_PING"] = "false"
 
 import pytest
@@ -43,10 +45,33 @@ _TRUNCATE_NULLS = [
 ]
 
 
+def _create_test_database():
+    """Create the test database if it doesn't exist (sync, outside any transaction)."""
+    from sqlalchemy import create_engine as sync_create_engine
+
+    # Parse the async URL into a sync one for the maintenance "postgres" database
+    # asyncpg URL: postgresql+asyncpg://user@host:port/dbname
+    sync_url = settings.database_url.replace("+asyncpg", "")
+    base = sync_url.rsplit("/", 1)[0] + "/postgres"
+    db_name = sync_url.rsplit("/", 1)[1].split("?")[0]
+
+    maint = sync_create_engine(base, isolation_level="AUTOCOMMIT")
+    with maint.connect() as conn:
+        exists = conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = :name"),
+            {"name": db_name},
+        ).scalar()
+        if not exists:
+            conn.execute(text(f"CREATE DATABASE {db_name}"))
+    maint.dispose()
+
+
 @pytest_asyncio.fixture(scope="session")
 async def _test_engine():
-    """Session-scoped test engine — created fresh in the test event loop."""
+    """Session-scoped test engine — uses isolated test database, dropped after tests."""
     import app.db.models  # noqa: F401  # ensure all models registered
+
+    _create_test_database()
 
     engine = create_async_engine(
         settings.database_url,
