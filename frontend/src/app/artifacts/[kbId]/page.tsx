@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { getArtifacts } from "@/lib/api";
-import { resolveArtifactUrl } from "@/lib/api";
+import { apiBase, getArtifacts } from "@/lib/api";
 import type { ArtifactVersion } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+function artifactViewUrl(kbId: string, artifactType: string): string {
+  return `${apiBase}/api/knowledge-bases/${kbId}/artifacts/${artifactType}/view`;
+}
 
 export default async function ArtifactViewerPage({ params }: { params: { kbId: string } }) {
   let kbId = params.kbId;
@@ -46,7 +49,7 @@ export default async function ArtifactViewerPage({ params }: { params: { kbId: s
               {graphArtifact.artifact_type} · {graphArtifact.artifact_path}
             </div>
             <iframe
-              src={resolveArtifactUrl(graphArtifact.artifact_path)}
+              src={artifactViewUrl(kbId, graphArtifact.artifact_type)}
               title="graph artifact viewer"
               style={{ width: "100%", height: "75vh", border: 0, background: "white" }}
             />

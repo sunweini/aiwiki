@@ -27,11 +27,6 @@ async def _session():
         yield s
 
 
-def _run_async(coro):
-    """Bridge async to sync for fastmcp tools."""
-    return asyncio.run(coro)
-
-
 # ------------------------------------------------------------------
 # fastmcp server
 # ------------------------------------------------------------------
@@ -42,33 +37,29 @@ mcp = FastMCP("aiwiki")
 
 
 @mcp.tool()
-def kb_status(kb_id: str) -> dict:
+async def kb_status(kb_id: str) -> dict:
     """Check status of a knowledge base including active release and graph availability.
 
     Args:
         kb_id: Knowledge base ID (e.g. "kb_aac292691c03").
     """
-    async def _impl():
-        async for session in _session():
-            return await MCPGatewayService(session).kb_status(kb_id)
-    return _run_async(_impl())
+    async for session in _session():
+        return await MCPGatewayService(session).kb_status(kb_id)
 
 
 @mcp.tool()
-def kb_list(project_id: str | None = None) -> dict:
+async def kb_list(project_id: str | None = None) -> dict:
     """List all knowledge bases, optionally filtered by project.
 
     Args:
         project_id: Filter by project ID (optional).
     """
-    async def _impl():
-        async for session in _session():
-            return await MCPGatewayService(session).kb_list(project_id)
-    return _run_async(_impl())
+    async for session in _session():
+        return await MCPGatewayService(session).kb_list(project_id)
 
 
 @mcp.tool()
-def kb_query(kb_id: str, question: str, mode: str = "bfs", budget: int = 2000) -> dict:
+async def kb_query(kb_id: str, question: str, mode: str = "bfs", budget: int = 2000) -> dict:
     """Query a knowledge graph with a natural-language question.
 
     Uses BFS traversal to find matching nodes and returns structured context.
@@ -79,14 +70,12 @@ def kb_query(kb_id: str, question: str, mode: str = "bfs", budget: int = 2000) -
         mode: Traversal mode "bfs" or "dfs" (default "bfs").
         budget: Token budget for response (default 2000).
     """
-    async def _impl():
-        async for session in _session():
-            return await MCPGatewayService(session).kb_query(kb_id, question, mode=mode, budget=budget)
-    return _run_async(_impl())
+    async for session in _session():
+        return await MCPGatewayService(session).kb_query(kb_id, question, mode=mode, budget=budget)
 
 
 @mcp.tool()
-def kb_path(kb_id: str, source_label: str, target_label: str) -> dict:
+async def kb_path(kb_id: str, source_label: str, target_label: str) -> dict:
     """Find shortest path between two nodes in the knowledge graph.
 
     Use kb_query first to discover exact node labels.
@@ -96,14 +85,12 @@ def kb_path(kb_id: str, source_label: str, target_label: str) -> dict:
         source_label: Source node label (substring match).
         target_label: Target node label (substring match).
     """
-    async def _impl():
-        async for session in _session():
-            return await MCPGatewayService(session).kb_path(kb_id, source_label, target_label)
-    return _run_async(_impl())
+    async for session in _session():
+        return await MCPGatewayService(session).kb_path(kb_id, source_label, target_label)
 
 
 @mcp.tool()
-def kb_explain(kb_id: str, node_label: str, budget: int = 2000) -> dict:
+async def kb_explain(kb_id: str, node_label: str, budget: int = 2000) -> dict:
     """Explain a specific node's context in the knowledge graph.
 
     Args:
@@ -111,10 +98,8 @@ def kb_explain(kb_id: str, node_label: str, budget: int = 2000) -> dict:
         node_label: Node label to explain (substring match).
         budget: Token budget for response (default 2000).
     """
-    async def _impl():
-        async for session in _session():
-            return await MCPGatewayService(session).kb_explain(kb_id, node_label, budget=budget)
-    return _run_async(_impl())
+    async for session in _session():
+        return await MCPGatewayService(session).kb_explain(kb_id, node_label, budget=budget)
 
 
 if __name__ == "__main__":

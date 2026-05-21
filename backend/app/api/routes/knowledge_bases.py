@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import FileResponse, HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.database import get_async_session
@@ -116,3 +117,33 @@ async def get_artifacts(
         release_id=artifacts["release_id"],
         artifacts=[ArtifactRead.model_validate(item, from_attributes=True) for item in artifacts["artifacts"]],
     )
+
+
+@router.get("/knowledge-bases/{kb_id}/artifacts/{artifact_type}/view")
+async def view_artifact(
+    kb_id: str,
+    artifact_type: str,
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Serve artifact file content for viewing (HTML, SVG, image, text, etc.)."""
+    svc = ArtifactService(session)
+    artifact = await svc.get_artifact_by_type(kb_id, artifact_type)
+    path = svc.resolve_artifact_path(artifact)
+
+    media_map = {
+        "html": "text/html; charset=utf-8",
+        "svg": "image/svg+xml",
+        "graph": "application/json",
+        "graphml": "application/xml",
+        "report": "text/markdown; charset=utf-8",
+        "logs": "text/plain; charset=utf-8",
+    }
+    media_type = media_map.get(artifact_type, "application/octet-stream")
+
+    # HTML: return as inline HTMLResponse so browser renders it in iframe
+    if artifact_type in ("html",):
+        return HTMLResponse(content=path.read_text(encoding="utf-8"), media_type=media_type)
+    if artifact_type in ("graph", "graphml"):
+        return HTMLResponse(content=path.read_text(encoding="utf-8"), media_type=media_type)
+
+    return FileResponse(str(path), media_type=media_type)

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { fetchKnowledgeBases } from "@/lib/api";
 import type { KnowledgeBaseSummary } from "@/lib/types";
 
-const DEFAULT_PROJECT_ID = process.env.NEXT_PUBLIC_DEFAULT_PROJECT_ID ?? "proj_myfirstpro";
+const DEFAULT_PROJECT_ID = process.env.NEXT_PUBLIC_DEFAULT_PROJECT_ID ?? "proj_290f1779bee8";
 
 interface PageData {
   knowledgeBases: KnowledgeBaseSummary[];

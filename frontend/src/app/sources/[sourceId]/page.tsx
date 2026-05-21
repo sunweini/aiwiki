@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { listSources } from "@/lib/api";
 import type { Source } from "@/lib/types";
 
-const DEFAULT_PROJECT_ID = process.env.NEXT_PUBLIC_DEFAULT_PROJECT_ID ?? "proj_myfirstpro";
+const DEFAULT_PROJECT_ID = process.env.NEXT_PUBLIC_DEFAULT_PROJECT_ID ?? "proj_290f1779bee8";
 
 async function loadSource(sourceId: string): Promise<Source | null> {
   try {
