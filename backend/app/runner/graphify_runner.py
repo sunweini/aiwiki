@@ -634,13 +634,15 @@ class GraphifyRunner:
             if backend not in _KNOWN_BACKENDS:
                 self._inject_custom_backend(llm_config)
             try:
-                semantic = graphify.llm.extract_corpus_parallel(
+                # graphify's OpenAI client can have threading issues inside
+                # uvicorn's ThreadPoolExecutor. Run extraction in a child
+                # process for reliable isolation.
+                semantic = self._run_semantic_extract_subprocess(
                     semantic_files,
                     backend=backend,
                     api_key=api_key_value,
                     model=llm_config.get("llm_model_override"),
                     token_budget=llm_config.get("llm_extraction_budget") or 20000,
-                    max_concurrency=1,
                 )
                 node_count = len(semantic.get("nodes", []))
                 edge_count = len(semantic.get("edges", []))
@@ -691,6 +693,93 @@ class GraphifyRunner:
             return value
         from app.config import settings
         return getattr(settings, key.lower(), None)
+
+    @staticmethod
+    def _run_semantic_extract_subprocess(
+        semantic_files: list[Path],
+        backend: str,
+        api_key: str,
+        model: str | None,
+        token_budget: int,
+    ) -> dict:
+        """Run LLM semantic extraction in a child process.
+
+        graphify's OpenAI-compatible client can hit threading issues inside
+        uvicorn's ThreadPoolExecutor (httpx / asyncio event-loop contention).
+        Running extraction in a subprocess isolates the call from the server
+        event loop and avoids ``NoneType is not iterable`` chunk failures.
+        """
+        import json
+        import subprocess
+        import tempfile
+
+        # Write file paths + config so the subprocess doesn't need the full DB
+        payload = {
+            "files": [str(f.resolve()) for f in semantic_files],
+            "backend": backend,
+            "api_key": api_key,
+            "model": model,
+            "token_budget": token_budget,
+        }
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".json", prefix="graphify_sem_", delete=False,
+        ) as tf:
+            json.dump(payload, tf)
+            payload_path = tf.name
+
+        script = (
+            "import json, sys\n"
+            "from pathlib import Path\n"
+            "import graphify.llm\n"
+            "with open(sys.argv[1]) as f:\n"
+            "    p = json.load(f)\n"
+            "files = [Path(x) for x in p['files']]\n"
+            "backend = p['backend']\n"
+            "if backend not in graphify.llm.BACKENDS:\n"
+            "    name = backend\n"
+            "    graphify.llm.BACKENDS[name] = {\n"
+            '        "base_url": "https://api.deepseek.com/v1",\n'
+            '        "default_model": p.get("model") or "deepseek-v4-flash",\n'
+            '        "env_key": f"{name.upper()}_API_KEY",\n'
+            '        "pricing": {"input": 0, "output": 0},\n'
+            '        "temperature": 0,\n'
+            '        "max_tokens": 16384,\n'
+            "    }\n"
+            "result = graphify.llm.extract_corpus_parallel(\n"
+            "    files,\n"
+            "    backend=backend,\n"
+            "    api_key=p['api_key'],\n"
+            "    model=p['model'],\n"
+            "    token_budget=p['token_budget'],\n"
+            "    max_concurrency=1,\n"
+            ")\n"
+            "json.dump(result, sys.stdout)\n"
+        )
+
+        try:
+            proc = subprocess.run(
+                [sys.executable, "-c", script, payload_path],
+                capture_output=True, text=True, timeout=600,
+            )
+        finally:
+            try:
+                Path(payload_path).unlink(missing_ok=True)
+            except OSError:
+                pass
+
+        if proc.returncode != 0:
+            stderr = proc.stderr.strip()
+            logger.error(
+                "Semantic extraction subprocess failed (exit %d): %s",
+                proc.returncode, stderr[:500],
+            )
+            return {"nodes": [], "edges": []}
+
+        try:
+            return json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            logger.error("Failed to parse semantic extraction subprocess output")
+            return {"nodes": [], "edges": []}
 
     @staticmethod
     def _inject_custom_backend(llm_config: dict) -> None:

@@ -1,0 +1,31 @@
+---
+source_file: "/Users/sunweini/同步空间/工作内容/pangu/aiwiki/data/projects/proj_290f1779bee8/kb/kb_7511eaf67c42/builds/job_ed8f9e3130be/input/backend/pkg/wechat/order.go"
+type: "code"
+community: "users_sunweini_同步空间_工作内容_pangu_aiwiki_data_projects_proj_290f1779bee8_kb_kb_7511eaf67c42_builds_job_ed8f9e3130be_input_backend_pkg_wechat_order_go"
+location: "L1"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/users_sunweini___pangu_aiwiki_data_projects_proj_290f1779bee8_kb_kb_7511eaf67c42_builds_job_ed8f9e3130be_input_backend_pkg_wechat_order_go
+---
+
+# order.go
+
+## Connections
+- [[Amount]] - `contains` [EXTRACTED]
+- [[JSAPIRequest]] - `contains` [EXTRACTED]
+- [[JSAPIResponse]] - `contains` [EXTRACTED]
+- [[NativeRequest]] - `contains` [EXTRACTED]
+- [[NativeResponse]] - `contains` [EXTRACTED]
+- [[NewOrderHandler()]] - `contains` [EXTRACTED]
+- [[NewRefundHandler()]] - `contains` [EXTRACTED]
+- [[Order]] - `contains` [EXTRACTED]
+- [[OrderHandler]] - `contains` [EXTRACTED]
+- [[OrderInfo]] - `contains` [EXTRACTED]
+- [[OrderProduct]] - `contains` [EXTRACTED]
+- [[OrderQueryRequest]] - `contains` [EXTRACTED]
+- [[OrderQueryResponse]] - `contains` [EXTRACTED]
+- [[Payer]] - `contains` [EXTRACTED]
+- [[RefundHandler]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/users_sunweini___pangu_aiwiki_data_projects_proj_290f1779bee8_kb_kb_7511eaf67c42_builds_job_ed8f9e3130be_input_backend_pkg_wechat_order_go

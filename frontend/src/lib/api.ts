@@ -55,6 +55,24 @@ export async function listProjects(): Promise<PaginatedResponse<Project>> {
   return fetchJSON<PaginatedResponse<Project>>("/api/projects");
 }
 
+export async function createProject(data: { name: string; description?: string | null }): Promise<Project> {
+  return fetchJSON<Project>("/api/projects", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateProject(id: string, data: { name: string; description?: string | null }): Promise<Project> {
+  return fetchJSON<Project>(`/api/projects/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  await fetchJSON<void>(`/api/projects/${id}`, { method: "DELETE" });
+}
+
 // --- Sources ---
 
 export async function listSources(projectId: string): Promise<PaginatedResponse<Source>> {
@@ -121,6 +139,17 @@ export async function createKnowledgeBase(projectId: string, data: Partial<Knowl
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export async function updateKnowledgeBase(kbId: string, data: Partial<KnowledgeBase>): Promise<KnowledgeBase> {
+  return fetchJSON<KnowledgeBase>(`/api/knowledge-bases/${kbId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteKnowledgeBase(kbId: string): Promise<void> {
+  await fetchJSON<void>(`/api/knowledge-bases/${kbId}`, { method: "DELETE" });
 }
 
 // --- Bindings ---

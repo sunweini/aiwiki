@@ -1,0 +1,11 @@
+{
+  "release_id": "rel_d3f709f2a5cf",
+  "kb_id": "kb_7511eaf67c42",
+  "build_job_id": "job_9fbdf111f9ad",
+  "status": "draft",
+  "artifact_paths": {
+    "graph": "kb/kb_7511eaf67c42/builds/job_9fbdf111f9ad/out/graph.json",
+    "obsidian": "kb/kb_7511eaf67c42/obsidian/",
+    "wiki": "kb/kb_7511eaf67c42/wiki/"
+  }
+}
