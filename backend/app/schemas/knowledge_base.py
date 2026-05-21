@@ -9,9 +9,9 @@ class KnowledgeBaseCreate(BaseModel):
     visibility: str
     description: str | None = None
     release_policy: dict[str, Any] = Field(default_factory=dict)
-    llm_backend: str | None = None
-    llm_api_key_ref: str | None = None
-    llm_model_override: str | None = None
+    llm_backend: str | None = "deepseek"
+    llm_api_key_ref: str | None = "env:DEEPSEEK_API_KEY"
+    llm_model_override: str | None = "deepseek-v4-flash"
     llm_extraction_budget: int | None = None
     llm_base_url_override: str | None = None
 

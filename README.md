@@ -97,36 +97,45 @@ curl -X POST http://localhost:8000/api/projects/proj_demo/sources \
 
 ### 第二步：创建 Knowledge Base 并配置 LLM
 
-Knowledge Base 是知识图谱的容器，需要配置 LLM 后端用于代码提取。
+Knowledge Base 是知识图谱的容器。**LLM 配置已内置默认值**（DeepSeek deepseek-v4-flash），无需手动指定即可直接使用。
 
 ```bash
-# 带 DeepSeek LLM 配置创建 KB
+# 使用默认 LLM 配置创建 KB（DeepSeek deepseek-v4-flash）
+curl -X POST http://localhost:8000/api/projects/proj_demo/knowledge-bases \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "My Code KB",
+    "visibility": "org_shared"
+  }'
+
+# 覆盖自定义 LLM 配置
 curl -X POST http://localhost:8000/api/projects/proj_demo/knowledge-bases \
   -H 'Content-Type: application/json' \
   -d '{
     "name": "My Code KB",
     "visibility": "org_shared",
-    "llm_backend": "deepseek",
-    "llm_api_key_ref": "env:DEEPSEEK_API_KEY",
-    "llm_model_override": "deepseek-v4-flash",
-    "llm_extraction_budget": 30000,
-    "llm_base_url_override": "https://api.deepseek.com/v1"
+    "llm_backend": "openai",
+    "llm_api_key_ref": "env:OPENAI_API_KEY",
+    "llm_model_override": "gpt-4o",
+    "llm_extraction_budget": 30000
   }'
 ```
 
 **LLM Backend 配置说明**：
 
-| 参数 | 说明 | 示例 |
-|------|------|------|
-| `llm_backend` | 后端名称 | `deepseek`, `openai`, `claude`, `ollama`, `gemini` |
-| `llm_api_key_ref` | API 密钥引用 | `env:DEEPSEEK_API_KEY`（从环境变量读取） |
-| `llm_model_override` | 模型名 | `deepseek-v4-flash`, `gpt-4o` |
-| `llm_extraction_budget` | 每次提取 token 上限 | `16384`（默认）, `30000` |
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| `llm_backend` | 后端名称 | `deepseek` |
+| `llm_api_key_ref` | API 密钥引用 | `env:DEEPSEEK_API_KEY` |
+| `llm_model_override` | 模型名 | `deepseek-v4-flash` |
+| `llm_extraction_budget` | 每次提取 token 上限 | `None`（graphify 默认 16384） |
 | `llm_base_url_override` | API 地址（自定义后端） | `https://api.deepseek.com/v1` |
 
 **内置 backend**：`claude`, `openai`, `ollama`, `gemini`, `kimi`, `bedrock`
 
-**自定义 backend**：任意名称（如 `deepseek`），系统自动注入到 `graphify.llm.BACKENDS`。只需设置 `llm_base_url_override` 和 `llm_model_override` 即可。
+**自定义 backend**：任意名称（如 `deepseek`），系统自动注入到 `graphify.llm.BACKENDS`。不指定 `llm_base_url_override` 和 `llm_model_override` 时使用 DeepSeek 默认值。
+
+**API Key 解析优先级**：`环境变量` → `config.py settings.<key>`。例如 `env:DEEPSEEK_API_KEY` 先查 `os.environ["DEEPSEEK_API_KEY"]`，未设置则取 `settings.deepseek_api_key`。`config.py` 已内置 `deepseek_api_key`，零配置即可运行。见 [开发环境搭建](docs/DEV_SETUP.md)。
 
 **设置 API Key**（在启动后端前）：
 ```bash
@@ -447,11 +456,13 @@ alembic downgrade -1
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `AIKB_DATABASE_URL` | 数据库连接串 | `sqlite+pysqlite:///:memory:` |
+| `AIKB_DATABASE_URL` | 数据库连接串 | `postgresql+asyncpg://sunweini@localhost:5432/aiwiki` |
 | `AIKB_DATA_ROOT` | 数据根目录 | `./data` |
-| `DEEPSEEK_API_KEY` | DeepSeek API 密钥 | — |
+| `DEEPSEEK_API_KEY` | DeepSeek API 密钥 | `config.py` 内置（零配置） |
 | `OPENAI_API_KEY` | OpenAI API 密钥 | — |
 | `ANTHROPIC_API_KEY` | Anthropic API 密钥 | — |
+
+> **注意**：`database_url` 和 `deepseek_api_key` 已直接写在 `app/config.py` 中，无需环境变量。`AIKB_` 前缀仅用于覆盖。
 
 ---
 

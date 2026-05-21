@@ -39,26 +39,27 @@ npm run dev  # http://localhost:3000
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `AIKB_DATABASE_URL` | 数据库连接串 | `sqlite+pysqlite:///:memory:` |
+| `AIKB_DATABASE_URL` | 数据库连接串（覆盖 config.py） | `postgresql+asyncpg://sunweini@localhost:5432/aiwiki` |
 | `AIKB_DATA_ROOT` | 数据根目录 (projects/, releases/) | `./data` |
-| `DEEPSEEK_API_KEY` | DeepSeek API 密钥 | — |
+| `DEEPSEEK_API_KEY` | DeepSeek API 密钥 | `config.py` 内置（零配置） |
 | `OPENAI_API_KEY` | OpenAI API 密钥 | — |
 
 LLM API key 通过 `env:VARNAME` 引用传递给 KB 配置，例如 `env:DEEPSEEK_API_KEY`。
+解析优先级：先查 `os.environ`，未设置则 fallback 到 `config.py` 中 `deepseek_api_key`。
 
 ## 配置 LLM Backend
 
-创建 KB 时设置 `llm_backend` 字段：
+创建 KB 时 `llm_backend` 等字段已内置默认值（`deepseek` + `deepseek-v4-flash`），无需手动指定。
 
 | 后端 | 说明 |
 |------|------|
-| `deepseek` | DeepSeek API（兼容 OpenAI） |
+| `deepseek` | DeepSeek API（**默认**，兼容 OpenAI） |
 | `openai` | OpenAI 原生 |
 | `claude` | Anthropic Claude（内置） |
 | `ollama` | 本地 Ollama（内置） |
 | `gemini` | Google Gemini（内置） |
 
-自定义后端会自动注入 `graphify.llm.BACKENDS`，支持 `llm_base_url_override` 和 `llm_model_override`。
+自定义后端会自动注入 `graphify.llm.BACKENDS`，默认 fallback 为 DeepSeek 配置。
 
 ## 测试
 

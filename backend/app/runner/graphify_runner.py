@@ -686,8 +686,8 @@ class GraphifyRunner:
         if name in graphify.llm.BACKENDS:
             return
         graphify.llm.BACKENDS[name] = {
-            "base_url": llm_config.get("llm_base_url_override", "https://api.openai.com/v1"),
-            "default_model": llm_config.get("llm_model_override", "gpt-4.1-mini"),
+            "base_url": llm_config.get("llm_base_url_override", "https://api.deepseek.com/v1"),
+            "default_model": llm_config.get("llm_model_override", "deepseek-v4-flash"),
             "env_key": f"{name.upper()}_API_KEY",
             "pricing": {"input": 0, "output": 0},
             "temperature": 0,
