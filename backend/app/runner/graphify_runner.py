@@ -619,7 +619,7 @@ class GraphifyRunner:
             ast_result = graphify.extract.extract(
                 code_files,
                 cache_root=self.workspace_manager.cache_dir(project_id, kb_id),
-                parallel=True,
+                parallel=False,  # avoid ProcessPoolExecutor in thread-pool context
                 max_workers=llm_config.get("max_workers"),
             )
 
@@ -640,7 +640,7 @@ class GraphifyRunner:
                     api_key=api_key_value,
                     model=llm_config.get("llm_model_override"),
                     token_budget=llm_config.get("llm_extraction_budget") or 20000,
-                    max_concurrency=2,
+                    max_concurrency=1,
                 )
                 node_count = len(semantic.get("nodes", []))
                 edge_count = len(semantic.get("edges", []))
