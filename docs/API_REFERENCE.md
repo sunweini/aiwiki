@@ -284,7 +284,7 @@ MCP 端点前缀：`/mcp`
 // request
 {
   "kb_id": "kb_f871e0fc2f2b",
-  "query": "list all modules",
+  "question": "list all modules",
   "mode": "bfs",
   "budget": 500
 }
@@ -307,8 +307,8 @@ MCP 端点前缀：`/mcp`
 // request
 {
   "kb_id": "kb_f871e0fc2f2b",
-  "source": "checkout_service",
-  "target": "validate_order"
+  "source_label": "checkout_service",
+  "target_label": "validate_order"
 }
 ```
 
@@ -320,7 +320,7 @@ MCP 端点前缀：`/mcp`
 // request
 {
   "kb_id": "kb_f871e0fc2f2b",
-  "node_id": "checkout_service"
+  "node_label": "checkout_service"
 }
 ```
 

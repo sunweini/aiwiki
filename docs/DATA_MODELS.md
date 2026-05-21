@@ -122,8 +122,6 @@
 | `build_type` | String | `full_rebuild` / `incremental_update` |
 | `status` | String | `pending` / `running` / `completed` / `failed` / `cancelled` |
 | `release_id` | String | FK → releases.id, nullable |
-| `triggered_by` | String | `manual` / `webhook` / `schedule` |
-| `reason` | String | nullable |
 | `current_stage` | String | 当前 pipeline 阶段名, nullable |
 | `stages` | JSON | 阶段执行记录列表 |
 | `error_summary` | String | nullable；失败时记录 |

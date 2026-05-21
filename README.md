@@ -18,7 +18,7 @@
 └──────────────┘    └──────────────┘    └──────────────┘
 ```
 
-**核心流程**：创建 Source → 创建 Knowledge Base → 绑定 Source → 触发 Build → 查看 Release/Artifacts → MCP 查询图谱
+**核心流程**：创建 Project → 创建 Source → 创建 Knowledge Base → 绑定 Source → 触发 Build → 查看 Release/Artifacts → MCP 查询图谱
 
 ---
 
@@ -40,7 +40,7 @@
 ```bash
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
-pip install fastapi uvicorn sqlalchemy alembic pydantic-settings pytest fastmcp mcp
+pip install -r requirements.txt
 alembic upgrade head
 uvicorn app.main:app --reload --reload-dir app/ --host 0.0.0.0 --port 8000
 ```
@@ -62,7 +62,7 @@ npm run dev
 curl http://localhost:8000/api/projects
 
 # 运行测试
-cd backend && python3 -m pytest tests/ -v  # 54 tests
+cd backend && python3 -m pytest tests/ -v  # 56 tests
 cd frontend && npx tsc --noEmit             # type check
 ```
 
@@ -216,7 +216,7 @@ curl -X POST http://localhost:8000/mcp/kb_query \
   -H 'Content-Type: application/json' \
   -d '{
     "kb_id": "<KB_ID>",
-    "query": "list all modules",
+    "question": "list all modules",
     "mode": "bfs",
     "budget": 500
   }'
@@ -235,8 +235,8 @@ curl -X POST http://localhost:8000/mcp/kb_path \
   -H 'Content-Type: application/json' \
   -d '{
     "kb_id": "<KB_ID>",
-    "source": "node_a",
-    "target": "node_b"
+    "source_label": "node_a",
+    "target_label": "node_b"
   }'
 ```
 
@@ -246,7 +246,7 @@ curl -X POST http://localhost:8000/mcp/kb_explain \
   -H 'Content-Type: application/json' \
   -d '{
     "kb_id": "<KB_ID>",
-    "node_id": "checkout_service"
+    "node_label": "checkout_service"
   }'
 ```
 
@@ -413,7 +413,7 @@ aiwiki/
 │   │   ├── schemas/           # Pydantic
 │   │   └── services/          # 业务逻辑
 │   ├── alembic/               # 数据库迁移
-│   └── tests/                 # 54 tests
+│   └── tests/                 # 56 tests
 ├── data/                      # 运行时数据 (gitignored)
 │   └── projects/{id}/         # 项目根
 │       ├── sources/           # 源文件副本 (复制进入，隔离边界)
@@ -435,7 +435,7 @@ aiwiki/
 
 ```bash
 cd backend
-python3 -m pytest tests/ -v    # 全部 54 个测试
+python3 -m pytest tests/ -v    # 全部 56 个测试
 pytest tests/test_closure_flow.py -v  # 最小闭环测试
 pytest tests/test_graphify_runner.py -v  # pipeline 测试
 ```
@@ -461,7 +461,7 @@ alembic downgrade -1
 | `AIKB_DATA_ROOT` | 数据根目录 | `./data` |
 | `DEEPSEEK_API_KEY` | DeepSeek API 密钥 | `config.py` 内置（零配置） |
 | `OPENAI_API_KEY` | OpenAI API 密钥 | — |
-| `ANTHROPIC_API_KEY` | Anthropic API 密钥 | — |
+| `ANTHROPIC_API_KEY` | Anthropic API 密钥（graphify 内置 Claude 后端使用） | — |
 
 > **注意**：`database_url` 和 `deepseek_api_key` 已直接写在 `app/config.py` 中，无需环境变量。`AIKB_` 前缀仅用于覆盖。
 

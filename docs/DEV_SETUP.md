@@ -6,7 +6,7 @@
 |------|----------|
 | Python | 3.12+ |
 | Node.js | 18+ |
-| PostgreSQL | 16+ (或 SQLite 用于开发) |
+| PostgreSQL | 16+ |
 | graphify | 已发布 wheel |
 
 ## 快速启动
@@ -20,7 +20,6 @@ cd aiwiki
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env  # 编辑配置
 
 # 3. 数据库迁移
 alembic upgrade head
@@ -58,6 +57,8 @@ LLM API key 通过 `env:VARNAME` 引用传递给 KB 配置，例如 `env:DEEPSEE
 | `claude` | Anthropic Claude（内置） |
 | `ollama` | 本地 Ollama（内置） |
 | `gemini` | Google Gemini（内置） |
+| `kimi` | Moonshot Kimi（内置） |
+| `bedrock` | AWS Bedrock（内置） |
 
 自定义后端会自动注入 `graphify.llm.BACKENDS`，默认 fallback 为 DeepSeek 配置。
 
@@ -65,7 +66,7 @@ LLM API key 通过 `env:VARNAME` 引用传递给 KB 配置，例如 `env:DEEPSEE
 
 ```bash
 cd backend
-python3 -m pytest tests/ -v    # 54 tests
+python3 -m pytest tests/ -v    # 56 tests
 ```
 
 前端类型检查：
