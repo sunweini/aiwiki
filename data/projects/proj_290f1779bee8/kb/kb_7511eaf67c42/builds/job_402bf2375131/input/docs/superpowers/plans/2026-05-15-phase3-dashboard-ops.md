@@ -1,0 +1,1 @@
+/Users/sunweini/同步空间/工作内容/pangu/aiwiki/data/projects/proj_290f1779bee8/sources/src_fd3313eae8ed/docs/superpowers/plans/2026-05-15-phase3-dashboard-ops.md
