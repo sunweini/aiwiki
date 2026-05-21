@@ -1,44 +1,80 @@
+"use client";
+
 import Link from "next/link";
-
-import { fetchKnowledgeBases, listAllBuildJobs } from "@/lib/api";
-import type { BuildJob, KnowledgeBaseSummary } from "@/lib/types";
-
-const DEFAULT_PROJECT_ID = process.env.NEXT_PUBLIC_DEFAULT_PROJECT_ID ?? "proj_myfirstpro";
+import { useCallback, useEffect, useState } from "react";
+import { fetchKnowledgeBases, listAllBuildJobs, listProjects } from "@/lib/api";
+import type { BuildJob, KnowledgeBaseSummary, Project } from "@/lib/types";
 
 interface DashboardData {
+  projects: Project[];
   knowledgeBases: KnowledgeBaseSummary[];
   recentBuilds: BuildJob[];
   error: string | null;
+  loading: boolean;
 }
 
-async function loadDashboard(): Promise<DashboardData> {
-  try {
-    const knowledgeBases = await fetchKnowledgeBases(DEFAULT_PROJECT_ID);
-    let recentBuilds: BuildJob[] = [];
-    try {
-      const all = await listAllBuildJobs();
-      recentBuilds = all.slice(0, 8);
-    } catch {
-      recentBuilds = [];
+export default function DashboardPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseSummary[]>([]);
+  const [recentBuilds, setRecentBuilds] = useState<BuildJob[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch projects on mount
+  useEffect(() => {
+    let active = true;
+    async function load() {
+      try {
+        const page = await listProjects();
+        if (!active) return;
+        const items = page.items ?? [];
+        setProjects(items);
+        if (items.length === 1) {
+          setSelectedProjectId(items[0].id);
+        }
+      } catch (err) {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "无法连接 API");
+      } finally {
+        if (active) setLoading(false);
+      }
     }
-    return { knowledgeBases, recentBuilds, error: null };
-  } catch (err) {
-    return {
-      knowledgeBases: [],
-      recentBuilds: [],
-      error: err instanceof Error ? err.message : "无法连接 API",
-    };
-  }
-}
+    load();
+    return () => { active = false; };
+  }, []);
 
-export const dynamic = "force-dynamic";
-
-export default async function DashboardPage() {
-  const { knowledgeBases, recentBuilds, error } = await loadDashboard();
+  // Fetch KBs and builds when selected project changes
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    let active = true;
+    async function load() {
+      try {
+        const kbs = await fetchKnowledgeBases(selectedProjectId);
+        if (!active) return;
+        setKnowledgeBases(kbs);
+      } catch {
+        if (active) setKnowledgeBases([]);
+      }
+      try {
+        const all = await listAllBuildJobs();
+        if (!active) return;
+        // Filter builds to KBs belonging to selected project
+        const kbIds = new Set(await fetchKnowledgeBases(selectedProjectId).then(arr => arr.map(k => k.kb_id ?? k.id)).catch(() => [] as string[]));
+        if (!active) return;
+        const filtered = all.filter(b => kbIds.has(b.knowledge_base_id)).slice(0, 8);
+        setRecentBuilds(filtered);
+      } catch {
+        if (active) setRecentBuilds([]);
+      }
+    }
+    load();
+    return () => { active = false; };
+  }, [selectedProjectId]);
 
   const activeBuildCount = recentBuilds.filter((b) => b.status === "running" || b.status === "pending").length;
   const stats: Array<[string, string]> = [
-    ["项目", DEFAULT_PROJECT_ID],
+    ["项目", selectedProjectId || "—"],
     ["知识库", String(knowledgeBases.length)],
     ["最近构建", String(recentBuilds.length)],
     ["活跃构建", String(activeBuildCount)],
@@ -56,19 +92,51 @@ export default async function DashboardPage() {
         </p>
         {error ? (
           <p style={{ margin: "0.9rem 0 0", color: "var(--danger)", fontSize: "0.9rem" }}>
-            后端不可达：{error}。显示空白目录。
+            后端不可达：{error}。
           </p>
         ) : null}
       </header>
 
       <section style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
-        {stats.map(([label, value]) => (
+        {/* Project selector */}
+        <article style={{ border: "1px solid var(--line)", padding: "1.25rem", background: "rgba(255,255,255,0.28)" }}>
+          <div style={{ color: "var(--muted)", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>项目</div>
+          {loading ? (
+            <div style={{ fontSize: "1.1rem", marginTop: "0.35rem", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>加载中…</div>
+          ) : projects.length <= 1 ? (
+            <div style={{ fontSize: "1.1rem", marginTop: "0.35rem", fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}>
+              {projects.length === 1 ? projects[0].name : "—"}
+            </div>
+          ) : (
+            <select
+              value={selectedProjectId}
+              onChange={(e) => setSelectedProjectId(e.target.value)}
+              style={{
+                width: "100%",
+                marginTop: "0.35rem",
+                padding: "0.5rem",
+                border: "1px solid var(--line)",
+                background: "rgba(255,255,255,0.8)",
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                fontSize: "0.85rem",
+                color: "var(--ink)",
+              }}
+            >
+              <option value="">— 选择项目 —</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          )}
+        </article>
+
+        {stats.slice(1).map(([label, value]) => (
           <article
             key={label}
             style={{ border: "1px solid var(--line)", padding: "1.25rem", background: "rgba(255,255,255,0.28)" }}
           >
             <div style={{ color: "var(--muted)", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</div>
-            <div style={{ fontSize: label === "项目" ? "1.1rem" : "2rem", marginTop: "0.35rem", fontFamily: label === "项目" ? "ui-monospace, SFMono-Regular, Menlo, monospace" : undefined }}>
+            <div style={{ fontSize: "2rem", marginTop: "0.35rem" }}>
               {value}
             </div>
           </article>
@@ -78,7 +146,9 @@ export default async function DashboardPage() {
       <section style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr", gap: "1.5rem" }}>
         <article style={{ border: "1px solid var(--line)", padding: "1.25rem", background: "rgba(255,255,255,0.28)" }}>
           <h2 style={{ marginTop: 0 }}>知识库目录</h2>
-          {knowledgeBases.length === 0 ? (
+          {!selectedProjectId ? (
+            <p style={{ color: "var(--muted)", margin: 0 }}>请先选择一个项目。</p>
+          ) : knowledgeBases.length === 0 ? (
             <p style={{ color: "var(--muted)", margin: 0 }}>此项目暂无知识库。</p>
           ) : (
             <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -103,7 +173,9 @@ export default async function DashboardPage() {
 
         <article style={{ border: "1px solid var(--line)", padding: "1.25rem", background: "rgba(255,255,255,0.28)" }}>
           <h2 style={{ marginTop: 0 }}>最近构建</h2>
-          {recentBuilds.length === 0 ? (
+          {!selectedProjectId ? (
+            <p style={{ color: "var(--muted)", margin: 0 }}>请先选择一个项目。</p>
+          ) : recentBuilds.length === 0 ? (
             <p style={{ color: "var(--muted)", margin: 0 }}>暂无构建记录。</p>
           ) : (
             <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>

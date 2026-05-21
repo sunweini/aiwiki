@@ -639,7 +639,7 @@ class GraphifyRunner:
                     backend=backend,
                     api_key=api_key_value,
                     model=llm_config.get("llm_model_override"),
-                    token_budget=llm_config.get("llm_extraction_budget") or 60000,
+                    token_budget=llm_config.get("llm_extraction_budget") or 20000,
                     max_concurrency=2,
                 )
                 node_count = len(semantic.get("nodes", []))

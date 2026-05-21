@@ -10,6 +10,7 @@ import type {
   MCPKBStatus,
   MCPQueryResult,
   PaginatedResponse,
+  Project,
   Release,
   Source,
 } from "./types";
@@ -46,6 +47,12 @@ export function resolveArtifactUrl(path: string): string {
   if (!path) return path;
   if (/^https?:\/\//i.test(path)) return path;
   return `${API_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
+// --- Projects ---
+
+export async function listProjects(): Promise<PaginatedResponse<Project>> {
+  return fetchJSON<PaginatedResponse<Project>>("/api/projects");
 }
 
 // --- Sources ---
