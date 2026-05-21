@@ -645,6 +645,17 @@ class GraphifyRunner:
                     model=llm_config.get("llm_model_override"),
                     token_budget=llm_config.get("llm_extraction_budget") or 20000,
                 )
+                # Sanitize None values that can break graphify export functions
+                # (to_wiki compares source_location with <, to_graphml rejects NoneType)
+                for n in semantic.get("nodes", []):
+                    for k in list(n.keys()):
+                        if n[k] is None:
+                            del n[k]
+                for e in semantic.get("edges", []):
+                    for k in list(e.keys()):
+                        if e[k] is None:
+                            del e[k]
+
                 node_count = len(semantic.get("nodes", []))
                 edge_count = len(semantic.get("edges", []))
                 if node_count == 0 and edge_count == 0:

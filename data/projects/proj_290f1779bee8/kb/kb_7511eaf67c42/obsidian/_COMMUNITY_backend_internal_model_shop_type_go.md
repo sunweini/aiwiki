@@ -1,0 +1,59 @@
+---
+type: community
+cohesion: 0.16
+members: 16
+---
+
+# backend_internal_model_shop_type_go
+
+**Cohesion:** 0.16 - loosely connected
+**Members:** 16 nodes
+
+## Members
+- [[.TableName()]] - code - backend/internal/model/park.go
+- [[Activity]] - code - backend/internal/model/activity.go
+- [[DouyinApiConfig]] - code - backend/internal/model/douyin.go
+- [[DouyinSettlement]] - code - backend/internal/model/douyin.go
+- [[DouyinStoreMapping]] - code - backend/internal/model/douyin.go
+- [[DouyinVerifyRecord]] - code - backend/internal/model/douyin.go
+- [[MiniProgramConfig]] - code - backend/internal/model/system.go
+- [[NewDouyinHandler()]] - code - backend/internal/handler/douyin.go
+- [[OperationLog]] - code - backend/internal/model/system.go
+- [[PaymentConfig]] - code - backend/internal/model/payment.go
+- [[RolePermission]] - code - backend/internal/model/role_permission.go
+- [[ShopType]] - code - backend/internal/model/shop_type.go
+- [[douyin.go]] - code - backend/internal/model/douyin.go
+- [[payment.go]] - code - backend/internal/model/payment.go
+- [[shop_type.go]] - code - backend/internal/model/shop_type.go
+- [[system.go]] - code - backend/internal/model/system.go
+
+## Live Query (requires Dataview plugin)
+
+```dataview
+TABLE source_file, type FROM #community/backend_internal_model_shop_type_go
+SORT file.name ASC
+```
+
+## Connections to other communities
+- 4 edges to [[_COMMUNITY_backend_internal_model_meituan_go]]
+- 3 edges to [[_COMMUNITY_yfsc_platform_v2_meituan_assets_pc_data_js]]
+- 3 edges to [[_COMMUNITY_backend_internal_model_gate_go]]
+- 2 edges to [[_COMMUNITY_service_rbacservice_updaterolepermissions]]
+- 2 edges to [[_COMMUNITY_backend_internal_model_finance_go]]
+- 1 edge to [[_COMMUNITY_backend_internal_repository_stats_repo_go]]
+- 1 edge to [[_COMMUNITY_service_douyinservice_querycouponfromplatform]]
+- 1 edge to [[_COMMUNITY_service_activity_service_newactivityservice]]
+- 1 edge to [[_COMMUNITY_backend_internal_model_park_go]]
+- 1 edge to [[_COMMUNITY_backend_internal_model_user_go]]
+- 1 edge to [[_COMMUNITY_backend_internal_model_role_go]]
+- 1 edge to [[_COMMUNITY_handler_order_newrefundhandler]]
+- 1 edge to [[_COMMUNITY_handler_position_newpositionhandler]]
+- 1 edge to [[_COMMUNITY_backend_pkg_payment_provider_go]]
+- 1 edge to [[_COMMUNITY_backend_internal_model_shop_go]]
+
+## Top bridge nodes
+- [[.TableName()]] - degree 29, connects to 12 communities
+- [[douyin.go]] - degree 6, connects to 1 community
+- [[DouyinSettlement]] - degree 3, connects to 1 community
+- [[DouyinVerifyRecord]] - degree 3, connects to 1 community
+- [[NewDouyinHandler()]] - degree 2, connects to 1 community
